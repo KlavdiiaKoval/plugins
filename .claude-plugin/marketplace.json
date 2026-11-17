@@ -1,10 +1,10 @@
 {
-  "name": "pr0",
+  "name": "klavdiiakoval",
   "owner": {
     "name": "Klavdiia Koval"
   },
   "metadata": {
-    "description": "Shape a multi-PR feature as types and stubs first (PR 0)."
+    "description": "Claude Code plugins for engineering teams."
   },
   "plugins": [
     {

@@ -2,7 +2,9 @@
   "name": "pr0",
   "version": "0.1.0",
   "description": "Plan a multi-PR feature as types, interfaces and stubs first (PR 0), with a design doc.",
-  "author": { "name": "Klavdiia Koval" },
+  "author": {
+    "name": "Klavdiia Koval"
+  },
   "license": "MIT",
-  "repository": "https://github.com/KlavdiiaKoval/pr0"
+  "repository": "https://github.com/KlavdiiaKoval/plugins"
 }
