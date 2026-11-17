@@ -1,0 +1,49 @@
+{
+  "name": "gate",
+  "version": "0.1.0",
+  "description": "Stops Claude from muting checks, force pushing or reading secrets, and from saying done while build, lint or tests fail. Also checks commits and PR descriptions.",
+  "author": {
+    "name": "Klavdiia Koval"
+  },
+  "homepage": "https://github.com/KlavdiiaKoval/plugins",
+  "repository": "https://github.com/KlavdiiaKoval/plugins",
+  "license": "MIT",
+  "userConfig": {
+    "trusted_orgs": {
+      "type": "string",
+      "title": "Trusted orgs",
+      "description": "Your team's git orgs, separated by commas: `acme` for github.com/acme, or `gitlab.com/acme`. In repos with a remote in one of them, commit and PR rules apply and steps that run the repo's own code run: tests, node_modules/.bin, .venv/bin and .claude/gate.sh. Other repos still get build, vet and lint.",
+      "default": ""
+    },
+    "ticket_key": {
+      "type": "boolean",
+      "title": "Require a ticket key in PR titles",
+      "description": "Refuse a PR title without a key like ABC-123.",
+      "default": false
+    },
+    "gate_off": {
+      "type": "boolean",
+      "title": "Turn off all checks",
+      "description": "Skip every check this plugin runs: guards, lint, the repo gate, message checks, the tests check and the AI review. Same as CLAUDE_GATE_OFF=1.",
+      "default": false
+    },
+    "guard_off": {
+      "type": "boolean",
+      "title": "Turn off the guards",
+      "description": "Skip the edit guard and the command guard (force push, push to main, secrets files). Same as CLAUDE_GUARD_OFF=1.",
+      "default": false
+    },
+    "tests_off": {
+      "type": "boolean",
+      "title": "Turn off the tests check",
+      "description": "Skip the check that a Go module's code changes come with a test change before gh pr create. Same as CLAUDE_TESTS_OFF=1.",
+      "default": false
+    },
+    "review_off": {
+      "type": "boolean",
+      "title": "Turn off the AI review",
+      "description": "Skip the AI review of the branch before gh pr create. Same as CLAUDE_REVIEW_OFF=1.",
+      "default": false
+    }
+  }
+}
