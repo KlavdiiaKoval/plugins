@@ -11,6 +11,11 @@
       "name": "pr0",
       "source": "./plugins/pr0",
       "description": "Shapes a big feature as one small PR of types, interfaces and stubs, plus a design doc, before anyone writes the logic."
+    },
+    {
+      "name": "gate",
+      "source": "./plugins/gate",
+      "description": "Stops Claude from muting checks, force pushing or reading secrets, and from saying done while build, lint or tests fail. Also checks commits and PR descriptions."
     }
   ]
 }

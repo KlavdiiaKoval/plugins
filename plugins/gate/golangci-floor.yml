@@ -1,0 +1,57 @@
+version: "2"
+
+run:
+  timeout: 3m
+
+linters:
+  default: none
+  enable:
+    - errcheck
+    - errorlint
+    - nilerr
+    - gocognit
+    - funlen
+    - nestif
+    - ireturn
+    - wrapcheck
+    - revive
+    - sloglint
+  settings:
+    revive:
+      rules:
+        - name: exported
+    sloglint:
+      static-msg: true
+      no-mixed-args: true
+    wrapcheck:
+      ignore-sig-regexps:
+        - '\.Errorf\('
+        - 'errors\.New\('
+        - 'errors\.Unwrap\('
+        - 'errors\.Join\('
+        - '\.Wrapf?\('
+        - '\.Annotatef?\('
+        - '\.ErrorOrNil\('
+    funlen:
+      lines: 80
+      statements: 50
+    gocognit:
+      min-complexity: 20
+    nestif:
+      min-complexity: 5
+  exclusions:
+    presets:
+      - std-error-handling
+    rules:
+      - path: _test\.go
+        linters:
+          - errcheck
+          - errorlint
+          - funlen
+          - ireturn
+          - wrapcheck
+          - revive
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
