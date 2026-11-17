@@ -1,16 +1,16 @@
 {
-  "name": "pr0",
+  "name": "klavdiiakoval",
   "owner": {
     "name": "Klavdiia Koval"
   },
   "metadata": {
-    "description": "Shape a multi-PR feature as types and stubs first (PR 0)."
+    "description": "Claude Code plugins for engineering teams."
   },
   "plugins": [
     {
       "name": "pr0",
       "source": "./plugins/pr0",
-      "description": "Plan a multi-PR feature as types, interfaces and stubs first (PR 0), with a design doc."
+      "description": "Shapes a big feature as one small PR of types, interfaces and stubs, plus a design doc, before anyone writes the logic."
     }
   ]
 }
