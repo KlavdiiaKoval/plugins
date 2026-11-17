@@ -1,0 +1,16 @@
+{
+  "name": "pr0",
+  "owner": {
+    "name": "Klavdiia Koval"
+  },
+  "metadata": {
+    "description": "Shape a multi-PR feature as types and stubs first (PR 0)."
+  },
+  "plugins": [
+    {
+      "name": "pr0",
+      "source": "./plugins/pr0",
+      "description": "Plan a multi-PR feature as types, interfaces and stubs first (PR 0), with a design doc."
+    }
+  ]
+}
