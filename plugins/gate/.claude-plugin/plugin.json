@@ -36,7 +36,7 @@
     "tests_off": {
       "type": "boolean",
       "title": "Turn off the tests check",
-      "description": "Skip the check that a Go module's code changes come with a test change before gh pr create. Same as CLAUDE_TESTS_OFF=1.",
+      "description": "Skip the check that code changes in a Go module, Python project or TypeScript project come with a test change before gh pr create. Same as CLAUDE_TESTS_OFF=1.",
       "default": false
     },
     "review_off": {
