@@ -12,7 +12,7 @@ Claude writes code fast, but it skips the boring parts. It mutes a lint error in
 | Before an edit | Edits that mute a check are refused: a bare `//nolint`, `_ = err`, `@ts-ignore`, `# noqa` without a code. Skipping a test or changing lint config needs your OK. |
 | Before a command | Refused: force pushes (use `--force-with-lease`), pushes to `main` or `master`, and any command that reads a secrets file such as `.env` or `*.pem`. |
 | After an edit | The file is formatted and linted: Go with golangci-lint, Python with ruff, and TypeScript with the repo's eslint in trusted repos. |
-| Claude finishes its answer | Each changed repo must build, pass lint and, in trusted repos, pass its tests. If not, Claude keeps working. |
+| Claude finishes its answer | Each changed repo must build, pass lint and, in trusted repos, pass its tests. If not, Claude gets one more try to fix it. |
 | `git commit`, `gh pr create` | Commits use Conventional Commits, one logical change each. PR bodies need a `Risk:` and a `Tested:` line. |
 | `gh pr create` | Changed code needs a changed test. A second Claude reviews the diff for serious problems. |
 

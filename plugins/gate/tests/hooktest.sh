@@ -13,6 +13,7 @@ export CLAUDE_PLUGIN_DATA="$W/data"
 export CLAUDE_PLUGIN_OPTION_TRUSTED_ORGS="acme gitlab.example.com/acme-labs"
 export CLAUDE_PLUGIN_OPTION_TICKET_KEY=true
 
+# Compare an exit code or output with the expected value and count the result.
 check() {
   local name="$1" want="$2" got="$3"
   if [ "$want" = "$got" ]; then
@@ -22,6 +23,7 @@ check() {
   fi
 }
 
+# Print JSON from stdin on one line.
 json() { python3 -c "import json,sys;print(json.dumps(json.loads(sys.stdin.read())))"; }
 
 # Repos get an acme remote, so team rules and repo binaries apply.
