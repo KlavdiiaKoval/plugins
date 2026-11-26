@@ -1370,6 +1370,7 @@ check "code in the top part blocks" 2 "$(lc "$(desc "$short"$'\n\n```sql\nselect
 check "text after Agent notes counts" 2 "$(lc "$(desc "$short"$'\n\n+++ Agent notes\nx\n+++\n'"$long")")"
 check "unclosed Agent notes run to the end" 0 "$(lc "$(desc "$short"$'\n\n+++ Agent notes\n'"$long")")"
 check "CRLF text after Agent notes counts" 2 "$(lc "$(desc "$(printf '%s\r\n\r\n+++ Agent notes\r\nx\r\n+++\r\n%s' "$short" "$long")")")"
+check "+++ inside a fence in Agent notes stays in the notes" 0 "$(lc "$(desc "$short"$'\n\n+++ Agent notes\n```\n+++\nselect 1\n```\n+++')")"
 check "code inside Agent notes passes" 0 "$(lc "$(desc "$short"$'\n\n+++ Agent notes\n```sql\nselect 1\n```\n+++')")"
 check "patch edit passes" 0 "$(lc '{"id":"PLA-1","patch":[{"op":"replace","old_string":"a","new_string":"b"}]}')"
 check "status change passes" 0 "$(lc '{"id":"PLA-1","state":"Done"}')"

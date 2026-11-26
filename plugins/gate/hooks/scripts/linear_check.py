@@ -21,13 +21,27 @@ import rejections
 from offswitch import is_off
 
 TOP_MAX = 15
-COLLAPSIBLE = re.compile(r"(?ms)^\+\+\+.*?(?:^\+\+\+[ \t]*$|\Z)")
 FENCE = re.compile(r"(?m)^\s*(```|~~~)")
 
 
 def top_part(description: str) -> str:
-    """Return the part of a description a person reads: everything outside the collapsible blocks."""
-    return COLLAPSIBLE.sub("", description.replace("\r\n", "\n"))
+    """Return the part of a description a person reads: everything outside the collapsible blocks.
+
+    A block runs from a line that starts with +++ to a bare +++ line, or to the end. A +++ inside a code fence doesn't close it.
+    """
+    kept: list[str] = []
+    in_block = in_fence = False
+    for line in description.replace("\r\n", "\n").splitlines():
+        stripped = line.strip()
+        if not in_block:
+            in_block = line.startswith("+++")
+            if not in_block:
+                kept.append(line)
+        elif FENCE.match(line):
+            in_fence = not in_fence
+        elif stripped == "+++" and not in_fence:
+            in_block = False
+    return "\n".join(kept)
 
 
 def check(description: str) -> list[tuple[str, str]]:
