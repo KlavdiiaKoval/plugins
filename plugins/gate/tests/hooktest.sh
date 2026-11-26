@@ -566,6 +566,9 @@ mkdir -p "$W/bin"; printf '#!/bin/sh\ntouch %s/review_ran\n' "$W" >"$W/bin/claud
 python3 -c "import json,sys;print(json.dumps({'cwd':sys.argv[1],'tool_input':{'command':'gh'+' pr '+'create --fill'}}))" "$R13" |
   PATH="$W/bin:$PATH" "$H/pr_gate.py" >/dev/null 2>&1
 check "pr_gate blocks on tests" 2 $?
+python3 -c "import json,sys;print(json.dumps({'cwd':sys.argv[1],'tool_input':{'command':'gh'+' pr '+'create --fill'}}))" "$R13" |
+  CLAUDE_PLUGIN_OPTION_TRUSTED_ORGS= PATH="$W/bin:$PATH" "$H/pr_gate.py" >/dev/null 2>&1
+check "pr_gate skips untrusted repos" 0 $?
 [ -f "$W/review_ran" ]
 check "review skipped when tests block" 1 $?
 python3 -I -c "
