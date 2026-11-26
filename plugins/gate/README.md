@@ -56,6 +56,7 @@ A rule that keeps failing is worth teaching: put it in a conventions skill or yo
 ## Skills and agents
 
 - `git-conventions`: how to write commit messages, PR titles and PR descriptions, with a diagram when a flow changes.
+- `linear-tickets`: when to file a Linear ticket, a short bottom-line top for people and Agent notes for agents. A Linear save that breaks the shape is refused; teams without Linear never hit the check.
 - `go-conventions`, `ts-conventions`, `python-conventions`: opinionated defaults for writing code. The AI review reads them too.
 - `go-reviewer` and `security-reviewer` agents.
 

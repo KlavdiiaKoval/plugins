@@ -1308,6 +1308,31 @@ check "govulncheck skipped when go.mod is unchanged" 0 "$(wc -l <"$W/vuln.log" |
 rm -f "$PM"
 
 echo
+echo "linear_check.py"
+# Run linear_check.py on a tool_input JSON; print the exit code.
+lc() { printf '{"tool_name":"mcp__claude_ai_Linear__save_issue","tool_input":%s}' "$1" | "$K/linear_check.py" >/dev/null 2>&1; echo $?; }
+desc() { python3 -c "import json,sys;print(json.dumps({'title':'t','description':sys.argv[1]}))" "$1"; }
+short=$'**Done.**\n\nWhy: x.\n\nWhat: y.'
+long=$(for i in $(seq 1 16); do echo "- line $i"; done)
+check "short ticket passes" 0 "$(lc "$(desc "$short")")"
+check "long top part blocks" 2 "$(lc "$(desc "$long")")"
+check "long detail inside Agent notes passes" 0 "$(lc "$(desc "$short"$'\n\n+++ Agent notes\n'"$long"$'\n+++')")"
+check "code in the top part blocks" 2 "$(lc "$(desc "$short"$'\n\n```sql\nselect 1\n```')")"
+check "code inside Agent notes passes" 0 "$(lc "$(desc "$short"$'\n\n+++ Agent notes\n```sql\nselect 1\n```\n+++')")"
+check "patch edit passes" 0 "$(lc '{"id":"PLA-1","patch":[{"op":"replace","old_string":"a","new_string":"b"}]}')"
+check "status change passes" 0 "$(lc '{"id":"PLA-1","state":"Done"}')"
+check "gate off skips the ticket check" 0 "$(CLAUDE_PLUGIN_OPTION_GATE_OFF=true lc "$(desc "$long")")"
+for p in '{"tool_input":null}' '{"tool_input":{"description":7}}' '[1]' 'not json' ''; do
+  out=$(printf '%s' "$p" | "$K/linear_check.py" 2>&1)
+  check "linear_check fails open: ${p:-empty}" "0:" "$?:$out"
+done
+m=$(jq -r '.hooks.PreToolUse[] | select(.hooks[].command | test("linear_check")) | .matcher' "$P/hooks/hooks.json")
+hit=""
+for t in mcp__claude_ai_Linear__save_issue mcp__claude_ai_Linear__create_issue mcp__linear__update_issue mcp__claude_ai_Linear__get_issue; do
+  [[ "$t" =~ ^($m)$ ]] && hit="$hit ${t##*__}"
+done
+check "matcher hits the Linear write tools only" " save_issue create_issue update_issue" "$hit"
+
 echo "$pass passed, $fail failed"
 rm -rf "$W"
 [ "$fail" -eq 0 ]
