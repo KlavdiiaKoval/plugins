@@ -23,7 +23,7 @@ PARAGRAPH_MAX_SENTENCES = 5
 LIST_ITEM_MAX_SENTENCES = 2
 DASHES = (("\u2014", "em dash"), ("\u2013", "en dash"))
 SENTENCE_END = re.compile(r"[.!?][\"')\]]*(?=\s|$)")
-ABBREVIATIONS = frozenset({"e.g.", "i.e.", "vs.", "approx.", "cf.", "no."})
+ABBREVIATIONS = frozenset({"e.g.", "i.e.", "vs.", "approx.", "cf."})
 INITIALS = re.compile(r"(?:[a-z]\.){2,}")
 LIST_ITEM = re.compile(r"([-*]|\d+\.)\s")
 CODE_SPAN = re.compile(r"`[^`]*`")
@@ -31,7 +31,7 @@ LABEL = re.compile(r"(?:Why|What changes|Risk|Tested|After deploy|(?i:no test)):
 
 
 def prose_lines(text: str) -> list[tuple[int, str]]:
-    """Return (line number, line) pairs outside fenced and indented code blocks, with code spans removed.
+    """Return (line number, line) pairs outside fenced and indented code blocks.
 
     An indented line right under a list item continues that item, so it isn't code. Each line keeps its own indent,
     and a code span becomes the word X, so a sentence that starts with one still starts a new sentence.
@@ -40,8 +40,9 @@ def prose_lines(text: str) -> list[tuple[int, str]]:
     fenced = code = in_item = False
     for n, line in enumerate(text.splitlines(), start=1):
         stripped = line.strip()
-        if stripped.startswith("```"):
+        if stripped.startswith(("```", "~~~")):
             fenced = not fenced
+            code = in_item = False
             continue
         if fenced:
             continue
@@ -75,15 +76,16 @@ def sentences_in(text: str) -> list[str]:
     """Return the sentences in text, treating a missing final period as one.
 
     A sentence ends at . ! or ? before a space, unless a lowercase word follows or the period closes an abbreviation.
-    So versions, URLs, ellipses, e.g., vs. and U.S. don't split one.
+    So versions, URLs, e.g., vs., U.S. and "No. 5" don't split one. An ellipsis before a capital does.
     """
     text = text.strip()
     sentences: list[str] = []
     start = 0
     for end in SENTENCE_END.finditer(text):
         rest = text[end.end() :].lstrip()
-        word = text[start : end.end()].split()[-1].lower().rstrip("\"')]")
-        if rest and (rest[0].islower() or word in ABBREVIATIONS or INITIALS.fullmatch(word)):
+        word = text[start : end.end()].split()[-1].lower().strip("\"'()[]")
+        number = word == "no." and rest[:1].isdigit()
+        if rest and (rest[0].islower() or number or word in ABBREVIATIONS or INITIALS.fullmatch(word)):
             continue
         sentences.append(text[start : end.end()].strip())
         start = end.end()
