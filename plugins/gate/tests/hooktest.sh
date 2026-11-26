@@ -1176,8 +1176,8 @@ check "host/owner entry trusts that host" 2 "$(git -C "$RNX" remote set-url orig
 check "owner on another host is not trusted" 0 "$(git -C "$RNX" remote set-url origin https://gitlab.example.com/acme/x.git; mc 'git commit -m "wip"' "$RNX")"
 git -C "$RNX" remote set-url origin https://github.com/someone/notours.git
 check "ticket key off: title without a key passes" 0 "$(CLAUDE_PLUGIN_OPTION_TICKET_KEY=false mc "gh pr create --title 'fix(sync): retry failed syncs' --body '$LOBODY'")"
-check "ticket key on: title without a key blocks" 2 "$(mc "gh pr create --title 'fix(sync): retry failed syncs' --body 'lo. $BODY'")"
-check "-R trusted repo checked from outside" 2 "$(mc "gh pr create -R acme/x --title 'fix(sync): retry failed syncs' --body 'lo. $BODY'" "$RNX")"
+check "ticket key on: title without a key blocks" 2 "$(mc "gh pr create --title 'fix(sync): retry failed syncs' --body '$LOBODY'")"
+check "-R trusted repo checked from outside" 2 "$(mc "gh pr create -R acme/x --title 'fix(sync): retry failed syncs' --body '$LOBODY'" "$RNX")"
 for p in '{"tool_input":null}' '{"tool_input":{"command":null}}' '[1]' 'not json'; do
   printf '%s' "$p" | "$H/message_check.py" >/dev/null 2>&1
   check "message_check fails open: $p" 0 $?
