@@ -311,6 +311,7 @@ echo '{"session_id":"T","stop_hook_active":false}' | "$K/gate-repo.sh" >/dev/nul
 check "pre-existing lint issue ignored" 0 $?
 rm -f "$M" "$G"
 
+# Make a Go module nested inside another repo.
 nested_go() {
   cat >"$1" <<'EOF'
 package p
@@ -416,6 +417,7 @@ check "lint config in a parent dir is used" 1 $?
 rm -f "$M" "$G"
 
 echo "tests_check.py"
+# Run tests_check.py on a gh pr create in a repo; print nothing, return its exit code.
 tc() { python3 -c "import json;print(json.dumps({'cwd':'$1','tool_input':{'command':'gh'+' pr '+'create --body x'}}))" | "$H/tests_check.py" >/dev/null 2>&1; }
 R12=$(mkrepo tc); git -C "$R12" update-ref refs/remotes/origin/main HEAD; git -C "$R12" checkout -q -b feat
 mkdir -p "$R12/a"; printf 'package a\n\n// One is a fixture.\nfunc One() int { return 1 }\n' >"$R12/a/a.go"
@@ -492,6 +494,7 @@ printf 'package e\n\nimport "testing"\n\nfunc TestE2(t *testing.T) {}\n' >"$R12/
 git -C "$R12" add -A; git -C "$R12" commit -qm twomods
 tc "$R12"
 check "a test in one module does not cover another" 2 $?
+# Run tests_check.py and print its stderr.
 tcc() { python3 -c "import json,sys;print(json.dumps({'cwd':sys.argv[1],'tool_input':{'command':sys.argv[2]}}))" "$1" "$2" | "$H/tests_check.py" >/dev/null 2>&1; }
 tcc "$W" "cd $R12 && gh pr create --fill"
 check "cd before gh pr create checks that repo" 2 $?
@@ -802,8 +805,11 @@ print(m.review('diff --git a/a.go b/a.go\n+x\n')[1])
 check "slow reviewer is cut off and reported" "the reviewer took longer than 1s" "$out"
 echo "guard_edit.py"
 G="$W/guard"; mkdir -p "$G/.claude"
+# Run guard_edit.py on a tool payload; print its decision.
 gd() { python3 -c "import json,sys;print(json.dumps({'tool_input':json.loads(sys.argv[1])}))" "$1" | "$K/guard_edit.py" | jq -rs '.[0].hookSpecificOutput.permissionDecision // "allow"'; }
+# Print an Edit tool payload for a file, old text and new text.
 ed() { python3 -c "import json,sys;print(json.dumps({'file_path':sys.argv[1],'old_string':sys.argv[2],'new_string':sys.argv[3]}))" "$@"; }
+# Print a Write tool payload for a file and its content.
 wr() { python3 -c "import json,sys;print(json.dumps({'file_path':sys.argv[1],'content':sys.argv[2]}))" "$@"; }
 check "bare nolint denied" deny "$(gd "$(ed "$G/a.go" 'x()' 'x() //nolint')")"
 check "nolint without reason denied" deny "$(gd "$(ed "$G/a.go" 'x()' 'x() //nolint:errcheck')")"
@@ -835,6 +841,7 @@ check "guard off allows" allow "$(CLAUDE_GUARD_OFF=1 gd "$(ed "$G/a.go" 'x()' 'x
 
 echo "session_start.py"
 S=$(mkrepo ss)
+# Run the session-start hook in a repo; print its output.
 ss() { echo "{\"cwd\":\"$1\"}" | "$K/session_start.py" | jq -r '.hookSpecificOutput.additionalContext // ""'; }
 ctx=$(ss "$S")
 echo "$ctx" | grep -q "Test first" ; check "test-first rule injected" 0 $?
@@ -868,6 +875,7 @@ echo "$rep" | grep -q 'new-path-rule' ; check "report reads the plugin data dir 
 
 echo "review round 5 fixes"
 GM="${TMPDIR:-/tmp}/claude-gate-T.dirty"; GP="${TMPDIR:-/tmp}/claude-gate-T.gopkgs"
+# Run the Stop gate for a session; print its output.
 stop() { echo '{"session_id":"T","stop_hook_active":false}' | "$K/gate-repo.sh" 2>&1; }
 RV=$(mkrepo vetmix)
 printf 'b/b_test.go:10:2: old warning\n# x/b\nvet: b/b_test.go:10:60: not enough arguments\n' | (cd "$RV" && "$H/new_issues.py" "$RV" HEAD) >/dev/null
@@ -958,7 +966,9 @@ fi
 
 echo "guard_bash.py"
 RB=$(mkrepo gb); RBM=$(mkrepo gbmain)
+# Run guard_bash.py on a command; print its decision.
 gb() { python3 -c "import json,sys;print(json.dumps({'tool_name':'Bash','cwd':sys.argv[2],'tool_input':{'command':sys.argv[1]}}))" "$1" "${2:-$RB}" | "$H/guard_bash.py" | jq -rs '.[0].hookSpecificOutput.permissionDecision // "allow"'; }
+# Run guard_bash.py on a Read of a path; print its decision.
 gr() { python3 -c "import json,sys;print(json.dumps({'tool_name':'Read','tool_input':{'file_path':sys.argv[1]}}))" "$1" | "$H/guard_bash.py" | jq -rs '.[0].hookSpecificOutput.permissionDecision // "allow"'; }
 check "push --force denied" deny "$(gb 'git push --force origin feat')"
 check "push -uf denied" deny "$(gb 'git push -uf origin feat')"
@@ -987,6 +997,7 @@ check "echo mentioning .env allowed" allow "$(gb 'echo "see .env"')"
 check "Read .env denied" deny "$(gr "$RB/.env")"
 check "Read key file denied" deny "$(gr "$RB/certs/server.key")"
 check "Read normal file allowed" allow "$(gr "$RB/p.go")"
+# Run bash_checks.py on a Grep payload; print its decision.
 gg() { python3 -c "import json,sys;print(json.dumps({'tool_name':'Grep','cwd':sys.argv[2],'tool_input':json.loads(sys.argv[1])}))" "$1" "$RB" | "$K/bash_checks.py" | jq -rs '.[0].hookSpecificOutput.permissionDecision // "allow"'; }
 check "Grep in .env denied" deny "$(gg '{"pattern":"KEY","path":".env"}')"
 check "Grep with a .env* glob denied" deny "$(gg '{"pattern":"KEY","glob":".env*"}')"
@@ -1038,6 +1049,7 @@ echo "message_check.py"
 RMC=$(mkrepo mc); git -C "$RMC" checkout -q -b feat
 printf 'module mc\n\ngo 1.22\n\nrequire github.com/samber/lo v1.0.0\n' >"$RMC/go.mod"
 git -C "$RMC" commit -qam "feat: add lo for chunking"
+# Run message_check.py on a command in a repo; print its exit code.
 mc() { python3 -c "import json,sys;print(json.dumps({'tool_name':'Bash','cwd':sys.argv[2],'tool_input':{'command':sys.argv[1]}}))" "$1" "${2:-$RMC}" | "$H/message_check.py" >/dev/null 2>&1; echo $?; }
 BODY=$'A 503 dropped the sync, so retry it with backoff.\n\nRisk: a sync that keeps failing now takes 5 tries before it alerts.\n\nTested: go test ./...'
 NORISK=$'A 503 dropped the sync, so retry it.\n\nTested: go test ./...'
@@ -1239,6 +1251,7 @@ fake() {
   printf '#!/usr/bin/env bash\necho "$*" >>"%s"\n%s\nexit "${FAKE_RC:-0}"\n' "$2" "${3:-}" >"$1"
   chmod +x "$1"
 }
+# Run the Stop gate for a session; print its exit code.
 stopx() { echo '{"session_id":"PT","stop_hook_active":false}' | "$K/gate-repo.sh" >/dev/null 2>&1; echo $?; }
 PM="${TMPDIR:-/tmp}/claude-gate-PT.dirty"
 
