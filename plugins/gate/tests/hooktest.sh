@@ -1135,6 +1135,8 @@ check "owner prefix is not trusted" 0 "$(git -C "$RNX" remote set-url origin git
 check "host/owner entry trusts that host" 2 "$(git -C "$RNX" remote set-url origin https://gitlab.example.com/acme-labs/x.git; mc 'git commit -m "wip"' "$RNX")"
 check "owner on another host is not trusted" 0 "$(git -C "$RNX" remote set-url origin https://gitlab.example.com/acme/x.git; mc 'git commit -m "wip"' "$RNX")"
 check "look-alike host is not trusted" 0 "$(git -C "$RNX" remote set-url origin https://notgithub.com/acme/x.git; mc 'git commit -m "wip"' "$RNX")"
+check "org in a remote's path is not trusted" 0 "$(git -C "$RNX" remote set-url origin https://gitlab.com/evil/github.com/acme/x.git; mc 'git commit -m "wip"' "$RNX")"
+(. "$P/scripts/lib.sh"; is_trusted_repo "$RNX"); check "lib.sh: org in a remote's path is not trusted" 1 $?
 (. "$P/scripts/lib.sh"; is_trusted_repo "$RNX"); check "lib.sh: look-alike host is not trusted" 1 $?
 git -C "$RNX" remote set-url origin git@github.com:acme/x.git
 (. "$P/scripts/lib.sh"; is_trusted_repo "$RNX"); check "lib.sh: ssh remote is trusted" 0 $?

@@ -22,7 +22,7 @@ trusted_pattern() {
     *) host=github.com owner=$item ;;
     esac
     [[ "$host" =~ ^[A-Za-z0-9.-]+$ && "$owner" =~ ^[A-Za-z0-9._-]+$ ]] || continue
-    out+="${out:+|}[@/[:space:]]${host//./\\.}[:/]+${owner//./\\.}/"
+    out+="${out:+|}(://|@|[[:space:]])${host//./\\.}[:/]+${owner//./\\.}/"
   done
   printf '%s' "$out"
 }

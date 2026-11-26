@@ -110,7 +110,7 @@ def is_trusted_repo(cwd: str) -> bool:
     orgs = trusted_orgs()
     if not orgs:
         return False
-    pattern = "|".join(rf"(?:[@/]|\s){re.escape(h)}[:/]+{re.escape(o)}/" for h, o in orgs)
+    pattern = "|".join(rf"(?:://|@|\s){re.escape(h)}[:/]+{re.escape(o)}/" for h, o in orgs)
     return re.search(pattern, git(["remote", "-v"], cwd), re.IGNORECASE) is not None
 
 
