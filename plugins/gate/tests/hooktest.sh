@@ -1337,6 +1337,7 @@ echo
 echo "linear_check.py"
 # Run linear_check.py on a tool_input JSON; print the exit code.
 lc() { printf '{"tool_name":"mcp__claude_ai_Linear__save_issue","tool_input":%s}' "$1" | "$K/linear_check.py" >/dev/null 2>&1; echo $?; }
+# Print a save_issue tool_input JSON with the given description.
 desc() { python3 -c "import json,sys;print(json.dumps({'title':'t','description':sys.argv[1]}))" "$1"; }
 short=$'**Done.**\n\nWhy: x.\n\nWhat: y.'
 long=$(for i in $(seq 1 16); do echo "- line $i"; done)
@@ -1346,6 +1347,7 @@ check "long detail inside Agent notes passes" 0 "$(lc "$(desc "$short"$'\n\n+++ 
 check "code in the top part blocks" 2 "$(lc "$(desc "$short"$'\n\n```sql\nselect 1\n```')")"
 check "text after Agent notes counts" 2 "$(lc "$(desc "$short"$'\n\n+++ Agent notes\nx\n+++\n'"$long")")"
 check "unclosed Agent notes run to the end" 0 "$(lc "$(desc "$short"$'\n\n+++ Agent notes\n'"$long")")"
+check "CRLF text after Agent notes counts" 2 "$(lc "$(desc "$(printf '%s\r\n\r\n+++ Agent notes\r\nx\r\n+++\r\n%s' "$short" "$long")")")"
 check "code inside Agent notes passes" 0 "$(lc "$(desc "$short"$'\n\n+++ Agent notes\n```sql\nselect 1\n```\n+++')")"
 check "patch edit passes" 0 "$(lc '{"id":"PLA-1","patch":[{"op":"replace","old_string":"a","new_string":"b"}]}')"
 check "status change passes" 0 "$(lc '{"id":"PLA-1","state":"Done"}')"

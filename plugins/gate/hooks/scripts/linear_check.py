@@ -27,7 +27,7 @@ FENCE = re.compile(r"(?m)^\s*(```|~~~)")
 
 def top_part(description: str) -> str:
     """Return the part of a description a person reads: everything outside the collapsible blocks."""
-    return COLLAPSIBLE.sub("", description)
+    return COLLAPSIBLE.sub("", description.replace("\r\n", "\n"))
 
 
 def check(description: str) -> list[tuple[str, str]]:
