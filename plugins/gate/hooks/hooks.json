@@ -34,7 +34,7 @@
         ]
       },
       {
-        "matcher": "mcp__.*[Ll]inear.*__(save_issue|create_issue|update_issue)",
+        "matcher": "mcp__.*[Ll]inear.*__(save_issue|create_issue|update_issue)$",
         "hooks": [
           {
             "type": "command",

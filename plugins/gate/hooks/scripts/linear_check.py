@@ -21,13 +21,13 @@ import rejections
 from offswitch import is_off
 
 TOP_MAX = 15
-COLLAPSIBLE = re.compile(r"(?m)^\+\+\+")
+COLLAPSIBLE = re.compile(r"(?ms)^\+\+\+.*?(?:^\+\+\+[ \t]*$|\Z)")
 FENCE = re.compile(r"(?m)^\s*(```|~~~)")
 
 
 def top_part(description: str) -> str:
-    """Return the part of a description a person reads: everything before the first collapsible block."""
-    return COLLAPSIBLE.split(description, maxsplit=1)[0]
+    """Return the part of a description a person reads: everything outside the collapsible blocks."""
+    return COLLAPSIBLE.sub("", description)
 
 
 def check(description: str) -> list[tuple[str, str]]:
@@ -64,7 +64,7 @@ def run(payload: object) -> int:
     if not problems:
         return 0
     rejections.record("linear", sorted({rule for rule, _ in problems}), payload.get("cwd") or os.getcwd())
-    print("Fix the ticket description and save it again (see the platform:linear-tickets skill):", file=sys.stderr)
+    print("Fix the ticket description and save it again (see the gate:linear-tickets skill):", file=sys.stderr)
     for _, reason in problems:
         print(f"- {reason}", file=sys.stderr)
     return 2

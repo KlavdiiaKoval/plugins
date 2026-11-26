@@ -1324,6 +1324,8 @@ check "short ticket passes" 0 "$(lc "$(desc "$short")")"
 check "long top part blocks" 2 "$(lc "$(desc "$long")")"
 check "long detail inside Agent notes passes" 0 "$(lc "$(desc "$short"$'\n\n+++ Agent notes\n'"$long"$'\n+++')")"
 check "code in the top part blocks" 2 "$(lc "$(desc "$short"$'\n\n```sql\nselect 1\n```')")"
+check "text after Agent notes counts" 2 "$(lc "$(desc "$short"$'\n\n+++ Agent notes\nx\n+++\n'"$long")")"
+check "unclosed Agent notes run to the end" 0 "$(lc "$(desc "$short"$'\n\n+++ Agent notes\n'"$long")")"
 check "code inside Agent notes passes" 0 "$(lc "$(desc "$short"$'\n\n+++ Agent notes\n```sql\nselect 1\n```\n+++')")"
 check "patch edit passes" 0 "$(lc '{"id":"PLA-1","patch":[{"op":"replace","old_string":"a","new_string":"b"}]}')"
 check "status change passes" 0 "$(lc '{"id":"PLA-1","state":"Done"}')"
@@ -1334,8 +1336,9 @@ for p in '{"tool_input":null}' '{"tool_input":{"description":7}}' '[1]' 'not jso
 done
 m=$(jq -r '.hooks.PreToolUse[] | select(.hooks[].command | test("linear_check")) | .matcher' "$P/hooks/hooks.json")
 hit=""
-for t in mcp__claude_ai_Linear__save_issue mcp__claude_ai_Linear__create_issue mcp__linear__update_issue mcp__claude_ai_Linear__get_issue; do
-  [[ "$t" =~ ^($m)$ ]] && hit="$hit ${t##*__}"
+# Claude Code tests a regex matcher unanchored, so the matcher must anchor itself.
+for t in mcp__claude_ai_Linear__save_issue mcp__claude_ai_Linear__create_issue mcp__linear__update_issue mcp__claude_ai_Linear__get_issue mcp__claude_ai_Linear__save_issue_label mcp__claude_ai_Linear__create_issue_label; do
+  [[ "$t" =~ $m ]] && hit="$hit ${t##*__}"
 done
 check "matcher hits the Linear write tools only" " save_issue create_issue update_issue" "$hit"
 
