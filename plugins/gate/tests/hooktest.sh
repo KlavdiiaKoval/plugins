@@ -1060,8 +1060,11 @@ check "pr body without Risk line blocks" 2 "$(mc "gh pr create --title '$T' --bo
 check "pr body without Tested line blocks" 2 "$(mc "gh pr create --title '$T' --body $'Uses lo.\n\nRisk: none for users.'")"
 check "pr body with heading blocks" 2 "$(mc "gh pr create --title '$T' --body $'## Summary\nUses lo.\n\nRisk: none.\n\nTested: go test'")"
 check "pr unnamed new dependency blocks" 2 "$(mc "gh pr create --title '$T' --body '$BODY'")"
+# Print the new dependencies found in a diff on stdin, comma separated.
 nd() { python3 -I -c "import sys; sys.path.insert(0, '$H'); import message_check as m; print(','.join(sorted(m.new_deps(sys.stdin.read()))))"; }
 check "version bump is not a new dependency" "" "$(printf '+++ b/go.mod\n@@ -5 +5 @@ require (\n-\tgithub.com/a/b v1.0.0\n+\tgithub.com/a/b v1.1.0\n+++ b/package.json\n@@ -3 +3 @@\n-    "react": "^18.2.0",\n+    "react": "^18.3.0",\n' | nd)"
+check "package.json script is not a dependency" "" "$(printf '+++ b/package.json\n@@ -1,3 +1,4 @@\n   "scripts": {\n+    "typecheck": "tsc --noEmit",\n     "test": "jest"\n' | nd)"
+check "package.json dependency is found" "left-pad" "$(printf '+++ b/package.json\n@@ -1,3 +1,4 @@\n   "dependencies": {\n+    "left-pad": "^1.0.0",\n     "lo": "1"\n' | nd)"
 check "unpinned pyproject dependency found" "requests,rich" "$(printf '+++ b/pyproject.toml\n@@ -5,0 +6 @@ dependencies = [\n+    "requests",\n+    "rich[jupyter]",\n' | nd)"
 check "other pyproject lists are not dependencies" "" "$(printf '+++ b/pyproject.toml\n@@ -9,0 +10 @@ name = "x"\n+[tool.pytest.ini_options]\n+testpaths = [\n+    "tests",\n+]\n+[tool.ruff.lint]\n+select = [\n+    "UP",\n+]\n' | nd)"
 check "poetry table dependency found, python skipped" "boto3" "$(printf '+++ b/pyproject.toml\n@@ -1,0 +2 @@\n+[tool.poetry.dependencies]\n+python = "^3.11"\n+boto3 = "^1.0"\n' | nd)"
