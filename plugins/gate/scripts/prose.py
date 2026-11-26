@@ -1,6 +1,7 @@
 """Readability rules for PR titles and bodies: a bottom line first, no em or en dashes, no stock phrases, short sentences, paragraphs and bullets.
 
 Fenced and indented code blocks and inline code spans are skipped, so commands and code pass.
+A line indented under a list item continues the item, so it counts as prose.
 """
 
 from __future__ import annotations
@@ -27,7 +28,8 @@ ABBREVIATIONS = frozenset({"e.g.", "i.e.", "vs.", "approx.", "cf."})
 INITIALS = re.compile(r"(?:[a-z]\.){2,}")
 LIST_ITEM = re.compile(r"([-*]|\d+\.)\s")
 CODE_SPAN = re.compile(r"`[^`]*`")
-FENCE = re.compile(r"(`{3,}|~{3,})")
+# A backtick fence opener has no backtick after it, so ```x``` at a line start is a code span.
+FENCE = re.compile(r"(`{3,})(?!.*`)|(~{3,})")
 LABEL = re.compile(r"(?:Why|What changes|Risk|Tested|After deploy|(?i:no test)):")
 
 
@@ -48,7 +50,7 @@ def prose_lines(text: str) -> list[tuple[int, str]]:
                 fence = ""
             continue
         if opener := FENCE.match(stripped):
-            fence = opener.group(1)
+            fence = opener.group(1) or opener.group(2)
             code = in_item = False
             continue
         if line.startswith(("    ", "\t")) and (code or not in_item):

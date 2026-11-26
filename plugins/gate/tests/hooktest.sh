@@ -1125,6 +1125,7 @@ LOG=$'Adds lo.\n\nSeen in prod:\n    '"$(printf 'word %.0s' {1..32})"$'\n'"$TAIL
 NESTED=$'Adds lo.\n\n````md\n```\nTODO '"$EM"$' later\n```\n````\n\n```md\n~~~\nTODO '"$EM"$' later\n~~~\n```'"$TAIL"
 CODEHEAD=$'Adds lo.\n\n```bash\n# run tests\ngo test ./...\n```'"$TAIL"
 CODELABEL=$'Adds lo.\n\nWhy: x.\n\nWhat changes:\n- y.\n\nRisk: low.\n\n```\nTested: fake\n```'
+SPANFENCE=$'Adds lo.\n\n```retry``` is the new flag.'"$TAIL"
 TILDE=$'Adds lo.\n\n~~~\na '"$EM"$' b\n~~~'"$TAIL"
 FENCEDLOG=$'Adds lo.\n\n- Run it:\n```\nlo run\n```\n    '"$(printf 'word %.0s' {1..32})"$'\n'"$TAIL"
 check "pr body dash in code block passes" 0 "$(mc "gh pr create --title '$T' --body '$FENCE'")"
@@ -1146,6 +1147,7 @@ check "pr bottom line with U.S. and approx. passes" 0 "$(mc "gh pr create --titl
 check "pr nested fences stay code" 0 "$(mc "gh pr create --title '$T' --body '$NESTED'")"
 check "pr # comment in a code block is no heading" 0 "$(mc "gh pr create --title '$T' --body '$CODEHEAD'")"
 check "pr label inside a code block does not count" 2 "$(mc "gh pr create --title '$T' --body '$CODELABEL'")"
+check "pr line opening with a code span is no fence" 0 "$(mc "gh pr create --title '$T' --body '$SPANFENCE'")"
 check "pr body dash in tilde fence passes" 0 "$(mc "gh pr create --title '$T' --body '$TILDE'")"
 check "pr indented log after a fence in a list passes" 0 "$(mc "gh pr create --title '$T' --body '$FENCEDLOG'")"
 check "pr bottom line with (e.g. ...) passes" 0 "$(mc "gh pr create --title '$T' --body 'Adds lo (e.g. Postgres) for counts.$TAIL'")"
