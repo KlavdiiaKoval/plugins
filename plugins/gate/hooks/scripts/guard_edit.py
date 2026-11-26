@@ -231,7 +231,8 @@ def added_text(root: str, base: str) -> dict[str, list[tuple[int, str]]]:
         cwd=root,
         check=False,
         capture_output=True,
-        text=True,
+        encoding="utf-8",
+        errors="replace",
     ).stdout
     added: dict[str, list[tuple[int, str]]] = {}
     current, line = None, 0
@@ -251,7 +252,8 @@ def added_text(root: str, base: str) -> dict[str, list[tuple[int, str]]]:
         cwd=root,
         check=False,
         capture_output=True,
-        text=True,
+        encoding="utf-8",
+        errors="replace",
     ).stdout
     for name in filter(None, untracked.split("\0")):
         path = Path(root) / name

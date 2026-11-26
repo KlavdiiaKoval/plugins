@@ -914,6 +914,13 @@ check "scan ignores a nolint inside a string" 0 $?
 printf 'package p\n\n// S is a fixture.\nfunc S() int { return 1 } //nolint:errcheck // why\n' >"$RS/s.go"
 "$K/guard_edit.py" scan "$RS" HEAD >/dev/null
 check "scan allows a nolint with linter and reason" 0 $?
+printf 'caf\351\n' >"$RS/latin1.txt"; git -C "$RS" add latin1.txt; git -C "$RS" commit -qm "chore: add latin1"
+printf 'na\357ve\n' >>"$RS/latin1.txt"
+"$K/guard_edit.py" scan "$RS" HEAD~1 >/dev/null 2>&1
+check "scan reads a non-UTF-8 diff" 0 $?
+python3 -I -c "import sys; sys.path.insert(0, '$H'); import new_issues; new_issues.added_lines('$RS', 'HEAD~1')" 2>/dev/null
+check "added_lines reads a non-UTF-8 diff" 0 $?
+git -C "$RS" reset -q --hard HEAD~1
 printf 'package p\n\n// S is a fixture.\nfunc S() string { return "don'"'"'t" } //nolint\n' >"$RS/s.go"
 "$K/guard_edit.py" scan "$RS" HEAD >/dev/null
 check "scan sees a nolint after a string with an apostrophe" 1 $?
