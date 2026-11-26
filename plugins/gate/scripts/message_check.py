@@ -29,6 +29,8 @@ REVIEW_FIX = re.compile(r"\b(?:address(?:ed|es)? (?:the )?(?:review|comments|fee
 AUTOSQUASH = ("fixup!", "squash!", "amend!")
 HEADING = re.compile(r"(?m)^#{1,6} ")
 TESTED = re.compile(r"(?m)^Tested:")
+WHY = re.compile(r"(?m)^Why:")
+CHANGES = re.compile(r"(?m)^What changes:")
 RISK = re.compile(r"(?m)^Risk:")
 # Patterns run on a diff line without its leading "+" or "-".
 DEP_LINES = {
@@ -240,7 +242,11 @@ def pr_problems(title: str | None, body: str | None, diff: str) -> list[tuple[st
         return problems
     problems += prose.body_problems(body)
     if HEADING.search(body):
-        problems.append(("pr-body-heading", "no section headings. Write plain paragraphs."))
+        problems.append(("pr-body-heading", "no section headings. Use the labels `Why:`, `What changes:`, `Risk:` and `Tested:`."))
+    if not WHY.search(body):
+        problems.append(("pr-body-why", "add a `Why:` line: the problem, for whom, in one or two sentences."))
+    if not CHANGES.search(body):
+        problems.append(("pr-body-changes", "add a `What changes:` line with one bullet per behavior change."))
     if not RISK.search(body):
         problems.append(("pr-body-risk", "add a `Risk:` line: what could break, who would notice, how to roll back."))
     if not TESTED.search(body):

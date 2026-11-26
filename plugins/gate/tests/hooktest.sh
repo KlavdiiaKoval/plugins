@@ -1033,8 +1033,13 @@ RMC=$(mkrepo mc); git -C "$RMC" checkout -q -b feat
 printf 'module mc\n\ngo 1.22\n\nrequire github.com/samber/lo v1.0.0\n' >"$RMC/go.mod"
 git -C "$RMC" commit -qam "feat: add lo for chunking"
 mc() { python3 -c "import json,sys;print(json.dumps({'tool_name':'Bash','cwd':sys.argv[2],'tool_input':{'command':sys.argv[1]}}))" "$1" "${2:-$RMC}" | "$H/message_check.py" >/dev/null 2>&1; echo $?; }
-BODY=$'A 503 dropped the sync, so retry it with backoff.\n\nRisk: a sync that keeps failing now takes 5 tries before it alerts.\n\nTested: go test ./...'
-NORISK=$'A 503 dropped the sync, so retry it.\n\nTested: go test ./...'
+WHAT=$'\n\nWhy: a 503 dropped the sync.\n\nWhat changes:\n- Retries with backoff.'
+TAIL="$WHAT"$'\n\nRisk: none for users.\n\nTested: go test ./...'
+BODY="Retry failed syncs with backoff.$WHAT"$'\n\nRisk: a sync that keeps failing now takes 5 tries before it alerts.\n\nTested: go test ./...'
+NORISK="Retry failed syncs with lo.$WHAT"$'\n\nTested: go test ./...'
+NOTESTED="Retry failed syncs with lo.$WHAT"$'\n\nRisk: none for users.'
+LOBODY="Retry failed syncs with lo.$TAIL"
+HEADING=$'Retry failed syncs with lo.\n\n## Details'"$TAIL"
 T="fix(sync): retry failed syncs (ABC-1)"
 check "good commit passes" 0 "$(mc 'git commit -m "fix(sync): retry failed syncs with backoff"')"
 check "critical commit with a body passes" 0 "$(mc 'git commit -m "fix(billing)!: charge once per invoice" -m "Retries no longer charge twice. Finance sees fewer refunds."')"
@@ -1047,12 +1052,15 @@ check "commit subject period blocks" 2 "$(mc 'git commit -m "fix: retry failed s
 check "vague commit subject blocks" 2 "$(mc 'rtk git commit -am "fix: wip"')"
 check "commit body without blank line blocks" 2 "$(mc $'git commit -m "fix: retry syncs\nbecause 503"')"
 check "two -m flags pass" 0 "$(mc 'git commit -m "fix: retry syncs" -m "A 503 dropped them."')"
-check "good pr passes" 0 "$(mc "gh pr create --draft --title '$T' --body 'Adds lo for chunking. $BODY'")"
-check "pr title without ticket key blocks" 2 "$(mc "gh pr create --title 'fix(sync): retry failed syncs' --body 'lo. $BODY'")"
-check "pr title without a type blocks" 2 "$(mc "gh pr create --title 'ABC-1: Retry failed syncs' --body 'lo. $BODY'")"
-check "pr body without Risk line blocks" 2 "$(mc "gh pr create --title '$T' --body 'lo. $NORISK'")"
-check "pr body without Tested line blocks" 2 "$(mc "gh pr create --title '$T' --body $'Uses lo.\n\nRisk: none for users.'")"
-check "pr body with heading blocks" 2 "$(mc "gh pr create --title '$T' --body $'## Summary\nUses lo.\n\nRisk: none.\n\nTested: go test'")"
+check "good pr passes" 0 "$(mc "gh pr create --draft --title '$T' --body 'Adds lo for chunking.$TAIL'")"
+check "pr title without ticket key blocks" 2 "$(mc "gh pr create --title 'fix(sync): retry failed syncs' --body '$LOBODY'")"
+check "pr title without a type blocks" 2 "$(mc "gh pr create --title 'ABC-1: Retry failed syncs' --body '$LOBODY'")"
+check "pr body without Risk line blocks" 2 "$(mc "gh pr create --title '$T' --body '$NORISK'")"
+check "pr body without Tested line blocks" 2 "$(mc "gh pr create --title '$T' --body '$NOTESTED'")"
+check "pr body without a bottom line first blocks" 2 "$(mc "gh pr create --title '$T' --body '${TAIL#$'\n\n'} lo'")"
+check "pr body without Why line blocks" 2 "$(mc "gh pr create --title '$T' --body $'Adds lo.\n\nWhat changes:\n- Chunks.\n\nRisk: none.\n\nTested: go test'")"
+check "pr body without What changes line blocks" 2 "$(mc "gh pr create --title '$T' --body $'Adds lo.\n\nWhy: slow.\n\nRisk: none.\n\nTested: go test'")"
+check "pr body with heading blocks" 2 "$(mc "gh pr create --title '$T' --body '$HEADING'")"
 check "pr unnamed new dependency blocks" 2 "$(mc "gh pr create --title '$T' --body '$BODY'")"
 nd() { python3 -I -c "import sys; sys.path.insert(0, '$H'); import message_check as m; print(','.join(sorted(m.new_deps(sys.stdin.read()))))"; }
 check "version bump is not a new dependency" "" "$(printf '+++ b/go.mod\n@@ -5 +5 @@ require (\n-\tgithub.com/a/b v1.0.0\n+\tgithub.com/a/b v1.1.0\n+++ b/package.json\n@@ -3 +3 @@\n-    "react": "^18.2.0",\n+    "react": "^18.3.0",\n' | nd)"
@@ -1063,29 +1071,60 @@ check "unpinned requirements line found" "boto3" "$(printf '+++ b/requirements.t
 check "pr heredoc body passes" 0 "$(mc "gh pr create --title '$T' --body \"\$(cat <<'EOF'
 Adds lo for chunking.
 
+Why: big pages time out.
+
+What changes:
+- Pages go in chunks of 100.
+
 Risk: none for users, chunk sizes stay the same.
 
 Tested: go test ./...
 EOF
 )\"")"
-TAIL=$'\n\nRisk: none for users.\n\nTested: go test ./...'
 EM=$(printf '\xe2\x80\x94'); EN=$(printf '\xe2\x80\x93')
 LONG="Adds lo for chunking because $(printf 'word %.0s' {1..30})end."
-SIX="Adds lo. One. Two. Three. Four. Five."
+SIX=$'Adds lo.\n\nOne. Two. Three. Four. Five. Six.'
 check "pr body em dash blocks" 2 "$(mc "gh pr create --title '$T' --body 'Adds lo $EM for chunking.$TAIL'")"
 check "pr body dash between numbers passes" 0 "$(mc "gh pr create --title '$T' --body 'Adds lo for pages 1${EN}5.$TAIL'")"
 check "pr body dash in code span passes" 0 "$(mc "gh pr create --title '$T' --body 'Adds lo, see \`a $EM b\`.$TAIL'")"
 FENCE=$'Adds lo.\n\n```\na '"$EM"$' b\n```'"$TAIL"
 INDENT=$'Adds lo.\n\n    '"$LONG$TAIL"
-LIST=$'Adds lo. One. Two.\n- Three. Four. Five.'"$TAIL"
+LIST=$'Adds lo.\n\nOne. Two. Three.\n- Four. Five.\n- Six. Seven.'"$TAIL"
+ITEM3=$'Adds lo.\n\n- One. Two. Three.'"$TAIL"
+WRAPPED=$'Adds lo.\nAlso chunks. And retries.'"$TAIL"
+EG=$'Adds lo.\n\n- Retries, e.g. on a 503. Then gives up.'"$TAIL"
+NUMBERED=$'Adds lo.\n\n1. Retries after 1s. Then dead-letters.'"$TAIL"
+CONT=$'Adds lo.\n\n- Retries once. Then gives up.\n  It alerts. It pages.'"$TAIL"
+CONT4=$'Adds lo.\n\n- Retries once. Then gives up.\n    It alerts. It pages.'"$TAIL"
+SPANLINE=$'Adds lo.\n\n- Renames the flag.\n`retry` is the new name. It is on.'"$TAIL"
+NOTEST=$'Adds lo for chunking.\nNo test: docs only.'"$TAIL"
+DIAGRAM=$'Adds lo for chunking.\n\n```mermaid\nflowchart LR\n  api --> worker --> warehouse\n```'"$TAIL"
+SPANS=$'Adds lo.\n\n- `a` is new. `b` is gone. `c` is renamed.'"$TAIL"
+LOG=$'Adds lo.\n\nSeen in prod:\n    '"$(printf 'word %.0s' {1..32})"$'\n'"$TAIL"
 check "pr body dash in code block passes" 0 "$(mc "gh pr create --title '$T' --body '$FENCE'")"
 check "pr body stock phrase blocks" 2 "$(mc "gh pr create --title '$T' --body 'That said, adds lo.$TAIL'")"
 check "pr body long sentence blocks" 2 "$(mc "gh pr create --title '$T' --body '$LONG$TAIL'")"
 check "pr body long sentence in code block passes" 0 "$(mc "gh pr create --title '$T' --body '$INDENT'")"
 check "pr body long paragraph blocks" 2 "$(mc "gh pr create --title '$T' --body '$SIX$TAIL'")"
 check "pr body list items count apart" 0 "$(mc "gh pr create --title '$T' --body '$LIST'")"
-check "pr body over 45 lines blocks" 2 "$(mc "gh pr create --title '$T' --body '$(printf 'Adds lo.\n\n%.0s' {1..44})$TAIL'")"
-check "pr body at 45 lines passes" 0 "$(mc "gh pr create --title '$T' --body '$(printf 'Adds lo.\n\n%.0s' {1..43})$TAIL'")"
+check "pr body three-sentence bullet blocks" 2 "$(mc "gh pr create --title '$T' --body '$ITEM3'")"
+check "pr bottom line with a version passes" 0 "$(mc "gh pr create --title '$T' --body 'Bumps lo to 1.22 so CI builds pass.$TAIL'")"
+check "pr bottom line with a colon passes" 0 "$(mc "gh pr create --title '$T' --body 'Adds lo: chunks no longer time out.$TAIL'")"
+check "pr wrapped two-sentence bottom line blocks" 2 "$(mc "gh pr create --title '$T' --body '$WRAPPED'")"
+check "pr bullet with e.g. passes" 0 "$(mc "gh pr create --title '$T' --body '$EG'")"
+check "pr numbered two-sentence bullet passes" 0 "$(mc "gh pr create --title '$T' --body '$NUMBERED'")"
+check "pr bullet continuation counts with it" 2 "$(mc "gh pr create --title '$T' --body '$CONT'")"
+check "pr 4-space bullet continuation counts" 2 "$(mc "gh pr create --title '$T' --body '$CONT4'")"
+check "pr line starting with code span is flush" 0 "$(mc "gh pr create --title '$T' --body '$SPANLINE'")"
+check "pr bottom line with U.S. and approx. passes" 0 "$(mc "gh pr create --title '$T' --body 'Adds lo for U.S. dates, approx. 2x faster.$TAIL'")"
+check "pr quoted sentence end still splits" 2 "$(mc "gh pr create --title '$T' --body 'Adds lo as \"chunk.\" Old calls work.$TAIL'")"
+check "pr No test line under bottom line passes" 0 "$(mc "gh pr create --title '$T' --body '$NOTEST'")"
+check "pr body with a mermaid diagram passes" 0 "$(mc "gh pr create --title '$T' --body '$DIAGRAM'")"
+check "pr sentences starting with code spans split" 2 "$(mc "gh pr create --title '$T' --body '$SPANS'")"
+check "pr bottom line with vs. before a name passes" 0 "$(mc "gh pr create --title '$T' --body 'Uses lo vs. Postgres for counts.$TAIL'")"
+check "pr indented log under a line passes" 0 "$(mc "gh pr create --title '$T' --body '$LOG'")"
+check "pr body over 45 lines blocks" 2 "$(mc "gh pr create --title '$T' --body '$(printf 'Adds lo.\n\n%.0s' {1..41})$TAIL'")"
+check "pr body at 45 lines passes" 0 "$(mc "gh pr create --title '$T' --body '$(printf 'Adds lo.\n\n%.0s' {1..40})$TAIL'")"
 check "pr title em dash blocks" 2 "$(mc "gh pr edit --title 'fix(sync): retry $EM syncs (ABC-1)'")"
 check "pr title en dash blocks" 2 "$(mc "gh pr edit --title 'fix(sync): retry $EN syncs (ABC-1)'")"
 check "pr title without dash passes" 0 "$(mc "gh pr edit --title '$T'")"
@@ -1110,7 +1149,12 @@ check "bad commit after a heredoc with a quote blocks" 2 "$(mc $'cat > f <<\'EOF
 check "bad commit in bash -c blocks" 2 "$(mc "bash -c 'git commit -m wip'")"
 check "bad commit under timeout blocks" 2 "$(mc 'timeout 10 git commit -m wip')"
 check "unquoted heredoc pr body passes" 0 "$(mc "gh pr create --title '$T' --body \$(cat <<'EOF'
-Adds lo for chunking. It's \"safe\".
+Adds lo for chunking, it's \"safe\".
+
+Why: big pages time out.
+
+What changes:
+- Pages go in chunks.
 
 Risk: none for users.
 
@@ -1125,7 +1169,7 @@ check "owner prefix is not trusted" 0 "$(git -C "$RNX" remote set-url origin git
 check "host/owner entry trusts that host" 2 "$(git -C "$RNX" remote set-url origin https://gitlab.example.com/acme-labs/x.git; mc 'git commit -m "wip"' "$RNX")"
 check "owner on another host is not trusted" 0 "$(git -C "$RNX" remote set-url origin https://gitlab.example.com/acme/x.git; mc 'git commit -m "wip"' "$RNX")"
 git -C "$RNX" remote set-url origin https://github.com/someone/notours.git
-check "ticket key off: title without a key passes" 0 "$(CLAUDE_PLUGIN_OPTION_TICKET_KEY=false mc "gh pr create --title 'fix(sync): retry failed syncs' --body 'lo. $BODY'")"
+check "ticket key off: title without a key passes" 0 "$(CLAUDE_PLUGIN_OPTION_TICKET_KEY=false mc "gh pr create --title 'fix(sync): retry failed syncs' --body '$LOBODY'")"
 check "ticket key on: title without a key blocks" 2 "$(mc "gh pr create --title 'fix(sync): retry failed syncs' --body 'lo. $BODY'")"
 check "-R trusted repo checked from outside" 2 "$(mc "gh pr create -R acme/x --title 'fix(sync): retry failed syncs' --body 'lo. $BODY'" "$RNX")"
 for p in '{"tool_input":null}' '{"tool_input":{"command":null}}' '[1]' 'not json'; do
