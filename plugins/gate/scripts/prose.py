@@ -27,6 +27,7 @@ ABBREVIATIONS = frozenset({"e.g.", "i.e.", "vs.", "approx.", "cf."})
 INITIALS = re.compile(r"(?:[a-z]\.){2,}")
 LIST_ITEM = re.compile(r"([-*]|\d+\.)\s")
 CODE_SPAN = re.compile(r"`[^`]*`")
+FENCE = re.compile(r"(`{3,}|~{3,})")
 LABEL = re.compile(r"(?:Why|What changes|Risk|Tested|After deploy|(?i:no test)):")
 
 
@@ -37,14 +38,18 @@ def prose_lines(text: str) -> list[tuple[int, str]]:
     and a code span becomes the word X, so a sentence that starts with one still starts a new sentence.
     """
     lines: list[tuple[int, str]] = []
-    fenced = code = in_item = False
+    fence = ""
+    code = in_item = False
     for n, line in enumerate(text.splitlines(), start=1):
         stripped = line.strip()
-        if stripped.startswith(("```", "~~~")):
-            fenced = not fenced
-            code = in_item = False
+        # A fence closes only on the same character, at least as long, with nothing after it.
+        if fence:
+            if stripped.startswith(fence) and not stripped.lstrip(fence[0]):
+                fence = ""
             continue
-        if fenced:
+        if opener := FENCE.match(stripped):
+            fence = opener.group(1)
+            code = in_item = False
             continue
         if line.startswith(("    ", "\t")) and (code or not in_item):
             code = True

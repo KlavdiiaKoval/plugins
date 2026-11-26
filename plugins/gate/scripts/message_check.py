@@ -241,15 +241,17 @@ def pr_problems(title: str | None, body: str | None, diff: str) -> list[tuple[st
     if body is None:
         return problems
     problems += prose.body_problems(body)
-    if HEADING.search(body):
+    # Headings and labels count only outside code blocks.
+    prose_text = "\n".join(line for _, line in prose.prose_lines(body))
+    if HEADING.search(prose_text):
         problems.append(("pr-body-heading", "no section headings. Use the labels `Why:`, `What changes:`, `Risk:` and `Tested:`."))
-    if not WHY.search(body):
+    if not WHY.search(prose_text):
         problems.append(("pr-body-why", "add a `Why:` line: the problem, for whom, in one or two sentences."))
-    if not CHANGES.search(body):
+    if not CHANGES.search(prose_text):
         problems.append(("pr-body-changes", "add a `What changes:` line with one bullet per behavior change."))
-    if not RISK.search(body):
+    if not RISK.search(prose_text):
         problems.append(("pr-body-risk", "add a `Risk:` line: what could break, who would notice, how to roll back."))
-    if not TESTED.search(body):
+    if not TESTED.search(prose_text):
         problems.append(("pr-body-tested", "end with a `Tested:` line that names the commands you ran."))
     unnamed = sorted(d for d in new_deps(diff) if d.split("/")[-1] not in body.lower())
     if unnamed:
