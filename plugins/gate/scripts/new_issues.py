@@ -28,7 +28,7 @@ def added_lines(root: str, base: str) -> dict[str, set[int] | None]:
     out = subprocess.run(
         ["git", "-c", "core.quotePath=false", "diff", "-U0", "--no-ext-diff", "--no-color",
          "--src-prefix=a/", "--dst-prefix=b/", base, "--"],
-        cwd=root, capture_output=True, text=True, check=False,
+        cwd=root, capture_output=True, encoding="utf-8", errors="replace", check=False,
     ).stdout
     lines: dict[str, set[int] | None] = {}
     current = None
@@ -45,7 +45,7 @@ def added_lines(root: str, base: str) -> dict[str, set[int] | None]:
             lines[current].update(range(start, start + count))
     untracked = subprocess.run(
         ["git", "ls-files", "-z", "--others", "--exclude-standard"],
-        cwd=root, capture_output=True, text=True, check=False,
+        cwd=root, capture_output=True, encoding="utf-8", errors="replace", check=False,
     ).stdout
     for name in filter(None, untracked.split("\0")):
         lines[os.path.join(root, name)] = None

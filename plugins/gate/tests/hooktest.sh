@@ -914,6 +914,13 @@ check "scan ignores a nolint inside a string" 0 $?
 printf 'package p\n\n// S is a fixture.\nfunc S() int { return 1 } //nolint:errcheck // why\n' >"$RS/s.go"
 "$K/guard_edit.py" scan "$RS" HEAD >/dev/null
 check "scan allows a nolint with linter and reason" 0 $?
+printf 'caf\351\n' >"$RS/latin1.txt"; git -C "$RS" add latin1.txt; git -C "$RS" commit -qm "chore: add latin1"
+printf 'na\357ve\n' >>"$RS/latin1.txt"
+"$K/guard_edit.py" scan "$RS" HEAD~1 >/dev/null 2>&1
+check "scan reads a non-UTF-8 diff" 0 $?
+python3 -I -c "import sys; sys.path.insert(0, '$H'); import new_issues; new_issues.added_lines('$RS', 'HEAD~1')" 2>/dev/null
+check "added_lines reads a non-UTF-8 diff" 0 $?
+git -C "$RS" reset -q --hard HEAD~1
 printf 'package p\n\n// S is a fixture.\nfunc S() string { return "don'"'"'t" } //nolint\n' >"$RS/s.go"
 "$K/guard_edit.py" scan "$RS" HEAD >/dev/null
 check "scan sees a nolint after a string with an apostrophe" 1 $?
@@ -996,6 +1003,8 @@ check "cp .env.example .env allowed" allow "$(gb 'cp .env.example .env')"
 check "echo mentioning .env allowed" allow "$(gb 'echo "see .env"')"
 check "Read .env denied" deny "$(gr "$RB/.env")"
 check "Read key file denied" deny "$(gr "$RB/certs/server.key")"
+check "Read aws credentials denied" deny "$(gr "$RB/.aws/credentials")"
+check "go package named credentials allowed" allow "$(gb 'go test ./internal/credentials')"
 check "Read normal file allowed" allow "$(gr "$RB/p.go")"
 # Run bash_checks.py on a Grep payload; print its decision.
 gg() { python3 -c "import json,sys;print(json.dumps({'tool_name':'Grep','cwd':sys.argv[2],'tool_input':json.loads(sys.argv[1])}))" "$1" "$RB" | "$K/bash_checks.py" | jq -rs '.[0].hookSpecificOutput.permissionDecision // "allow"'; }
@@ -1084,6 +1093,9 @@ check "pr unnamed new dependency blocks" 2 "$(mc "gh pr create --title '$T' --bo
 nd() { python3 -I -c "import sys; sys.path.insert(0, '$H'); import message_check as m; print(','.join(sorted(m.new_deps(sys.stdin.read()))))"; }
 check "version bump is not a new dependency" "" "$(printf '+++ b/go.mod\n@@ -5 +5 @@ require (\n-\tgithub.com/a/b v1.0.0\n+\tgithub.com/a/b v1.1.0\n+++ b/package.json\n@@ -3 +3 @@\n-    "react": "^18.2.0",\n+    "react": "^18.3.0",\n' | nd)"
 check "package.json script is not a dependency" "" "$(printf '+++ b/package.json\n@@ -1,3 +1,4 @@\n   "scripts": {\n+    "typecheck": "tsc --noEmit",\n     "test": "jest"\n' | nd)"
+check "package.json script without its object is not a dependency" "" "$(printf '+++ b/package.json\n@@ -3 +3,2 @@\n+    "lint": "eslint .",\n' | nd)"
+check "package.json dependency without its object is found" "left-pad" "$(printf '+++ b/package.json\n@@ -3 +3,2 @@\n+    "left-pad": "^1.0.0",\n' | nd)"
+check "go /vN module is named by its path" "pgx,pgx" "$(python3 -I -c "import sys; sys.path.insert(0, '$H'); import message_check as m; print(m.dep_name('github.com/jackc/pgx/v5') + ',' + m.dep_name('github.com/jackc/pgx'))")"
 check "package.json dependency is found" "left-pad" "$(printf '+++ b/package.json\n@@ -1,3 +1,4 @@\n   "dependencies": {\n+    "left-pad": "^1.0.0",\n     "lo": "1"\n' | nd)"
 check "unpinned pyproject dependency found" "requests,rich" "$(printf '+++ b/pyproject.toml\n@@ -5,0 +6 @@ dependencies = [\n+    "requests",\n+    "rich[jupyter]",\n' | nd)"
 check "other pyproject lists are not dependencies" "" "$(printf '+++ b/pyproject.toml\n@@ -9,0 +10 @@ name = "x"\n+[tool.pytest.ini_options]\n+testpaths = [\n+    "tests",\n+]\n+[tool.ruff.lint]\n+select = [\n+    "UP",\n+]\n' | nd)"
