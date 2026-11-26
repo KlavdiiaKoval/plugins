@@ -121,7 +121,7 @@ def commit_problems(message: str) -> list[tuple[str, str]]:
 def branch_problems(cwd: str) -> list[tuple[str, str]]:
     """Return (rule, reason) pairs for branch commits that are not one logical change each."""
     base = merge_base(cwd)
-    subjects = git(["log", "--format=%s", f"{base}..HEAD"], cwd).splitlines() if base else []
+    subjects = git(["log", "--no-merges", "--format=%s", f"{base}..HEAD"], cwd).splitlines() if base else []
     problems = []
     seen: set[str] = set()
     for subject in subjects:

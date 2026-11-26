@@ -1093,6 +1093,10 @@ check "commit body dash still passes" 0 "$(mc "git commit -m 'fix: retry syncs' 
 RSQ=$(mkrepo sq); git -C "$RSQ" checkout -q -b feat
 echo "package p // a" >"$RSQ/p.go"; git -C "$RSQ" commit -qam "fix: retry failed syncs"
 check "pr with one logical commit passes" 0 "$(mc "gh pr create --title '$T' --body '$BODY'" "$RSQ")"
+git -C "$RSQ" checkout -q main; echo "package p // m" >"$RSQ/m.go"; git -C "$RSQ" add m.go; git -C "$RSQ" commit -qm "chore: add m"
+git -C "$RSQ" checkout -q feat; git -C "$RSQ" merge -q --no-edit main
+check "pr with main merged in passes" 0 "$(mc "gh pr create --title '$T' --body '$BODY'" "$RSQ")"
+git -C "$RSQ" reset -q --hard HEAD~1
 echo "package p // b" >"$RSQ/p.go"; git -C "$RSQ" commit -qam "fixup! fix: retry failed syncs"
 check "pr with a fixup commit blocks" 2 "$(mc "gh pr create --title '$T' --body '$BODY'" "$RSQ")"
 git -C "$RSQ" reset -q --soft HEAD~1; git -C "$RSQ" commit -qm "fix: retry failed syncs"
