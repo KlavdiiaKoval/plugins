@@ -16,7 +16,7 @@ from pathlib import Path
 
 import prose
 import rejections
-from ghpr import gh_subcommand, git, is_trusted_owner, is_trusted_repo, merge_base
+from ghpr import GIT_FLAGS_WITH_ARG, gh_subcommand, git, is_trusted_owner, is_trusted_repo, merge_base
 from offswitch import ON, is_off
 from shellparse import commands
 
@@ -38,6 +38,9 @@ DEP_LINES = {
     "package.json": re.compile(r'^\s*"(@?[\w.\-/]+)"\s*:\s*"[^"]+"'),
     "requirements.txt": re.compile(r"^\s*([A-Za-z][\w.\-]{1,})\s*(?:\[[\w,\s-]*\])?\s*(?:[><=~!;]|$)"),
 }
+# package.json objects whose keys are dependencies, and a line that opens an object.
+NPM_DEP_SECTIONS = {"dependencies", "devDependencies", "peerDependencies", "optionalDependencies"}
+JSON_OBJECT = re.compile(r'^\s*"([^"]+)"\s*:\s*\{')
 # pyproject entries: `"requests>=2",` or `"requests",` in a list, `requests = "^2"` in a poetry table.
 PY_LIST_ENTRY = re.compile(r'^\s*"([A-Za-z][\w.\-]*)(?:\[[\w,\s-]*\])?\s*(?:[><=~!\^;][^"]*)?"\s*,?\s*$')
 PY_TABLE_ENTRY = re.compile(r'^\s*([A-Za-z][\w.\-]*)\s*=\s*["{]')
@@ -74,7 +77,7 @@ def commit_message(words: list[str], cwd: str) -> str | None:
     """Return the message a `git commit` will use, or None when it opens an editor or reuses one."""
     i = 1
     while i < len(words) and words[i].startswith("-") and words[i] != "commit":
-        i += 2 if words[i] in ("-C", "-c") else 1
+        i += 2 if words[i] in GIT_FLAGS_WITH_ARG else 1
     if i >= len(words) or words[i] != "commit":
         return None
     args = words[i + 1 :]
@@ -206,12 +209,15 @@ def new_deps(diff: str) -> set[str]:
     added: set[tuple[str, str]] = set()
     removed: set[tuple[str, str]] = set()
     current, place = "", PyprojectPlace()
+    # The package.json object a line is in: None when the hunk doesn't show it.
+    section: str | None = None
     for line in diff.splitlines():
         if line.startswith(("+++ ", "--- ")):
             current = Path(line[4:]).name if line.startswith("+++") else current
             place = PyprojectPlace()
             continue
         if line.startswith("@@"):
+            section = None
             place = PyprojectPlace()
             place.see(line.rpartition("@@")[2])
             continue
@@ -219,8 +225,12 @@ def new_deps(diff: str) -> set[str]:
         if current == "pyproject.toml":
             name = place.dep(text) if sign in "+-" else None
             place.see(text)
+        elif current == "package.json" and (opener := JSON_OBJECT.match(text)):
+            section, name = opener.group(1), None
         elif (pattern := DEP_LINES.get(current)) and not text.rstrip().endswith("// indirect"):
             name = m.group(1) if (m := pattern.match(text)) else None
+            if current == "package.json" and section is not None and section not in NPM_DEP_SECTIONS:
+                name = None
         else:
             name = None
         if sign in "+-" and name and name.lower() not in NOT_DEPS:
