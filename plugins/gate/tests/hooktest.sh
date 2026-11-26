@@ -1087,6 +1087,7 @@ check "version bump is not a new dependency" "" "$(printf '+++ b/go.mod\n@@ -5 +
 check "package.json script is not a dependency" "" "$(printf '+++ b/package.json\n@@ -1,3 +1,4 @@\n   "scripts": {\n+    "typecheck": "tsc --noEmit",\n     "test": "jest"\n' | nd)"
 check "package.json script without its object is not a dependency" "" "$(printf '+++ b/package.json\n@@ -3 +3,2 @@\n+    "lint": "eslint .",\n' | nd)"
 check "package.json dependency without its object is found" "left-pad" "$(printf '+++ b/package.json\n@@ -3 +3,2 @@\n+    "left-pad": "^1.0.0",\n' | nd)"
+check "go /vN module is named by its path" "pgx,pgx" "$(python3 -I -c "import sys; sys.path.insert(0, '$H'); import message_check as m; print(m.dep_name('github.com/jackc/pgx/v5') + ',' + m.dep_name('github.com/jackc/pgx'))")"
 check "package.json dependency is found" "left-pad" "$(printf '+++ b/package.json\n@@ -1,3 +1,4 @@\n   "dependencies": {\n+    "left-pad": "^1.0.0",\n     "lo": "1"\n' | nd)"
 check "unpinned pyproject dependency found" "requests,rich" "$(printf '+++ b/pyproject.toml\n@@ -5,0 +6 @@ dependencies = [\n+    "requests",\n+    "rich[jupyter]",\n' | nd)"
 check "other pyproject lists are not dependencies" "" "$(printf '+++ b/pyproject.toml\n@@ -9,0 +10 @@ name = "x"\n+[tool.pytest.ini_options]\n+testpaths = [\n+    "tests",\n+]\n+[tool.ruff.lint]\n+select = [\n+    "UP",\n+]\n' | nd)"

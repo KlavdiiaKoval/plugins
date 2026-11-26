@@ -240,6 +240,12 @@ def new_deps(diff: str) -> set[str]:
     return {name for _, name in added - removed}
 
 
+def dep_name(dep: str) -> str:
+    """Return the part of a dependency path a PR body must name: the last part, skipping a Go /vN suffix."""
+    parts = dep.split("/")
+    return parts[-2] if len(parts) > 1 and re.fullmatch(r"v\d+", parts[-1]) else parts[-1]
+
+
 def pr_problems(title: str | None, body: str | None, diff: str) -> list[tuple[str, str]]:
     """Return (rule, reason) pairs for a PR title and body that break the conventions."""
     problems = []
@@ -259,7 +265,7 @@ def pr_problems(title: str | None, body: str | None, diff: str) -> list[tuple[st
         problems.append(("pr-body-risk", "add a `Risk:` line: what could break, who would notice, how to roll back."))
     if not TESTED.search(body):
         problems.append(("pr-body-tested", "end with a `Tested:` line that names the commands you ran."))
-    unnamed = sorted(d for d in new_deps(diff) if d.split("/")[-1] not in body.lower())
+    unnamed = sorted(d for d in new_deps(diff) if dep_name(d) not in body.lower())
     if unnamed:
         problems.append(("pr-new-dependency", f"name each new dependency and why it is needed: {', '.join(unnamed)}."))
     return problems
