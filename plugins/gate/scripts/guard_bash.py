@@ -43,13 +43,14 @@ SECRET_NAMES = {
     "id_ed25519",
     ".git-credentials",
     ".netrc",
-    "credentials",
     "credentials.json",
 }
+# A bare `credentials` is a secret only in these dirs; elsewhere it's often a code package.
+CREDENTIAL_DIRS = {".aws"}
 SECRET_SUFFIXES = (".pem", ".key", ".p12", ".pfx")
 NOT_KEY_FILES = ("keybinding", "keymap")
 # Names a glob such as `.e?v` or `id_*` is matched against, whether or not the file exists.
-SECRET_SAMPLES = (*SECRET_NAMES, ".env", ".env.local", ".env.production", "anthropic_key.sh", "sa-key.json")
+SECRET_SAMPLES = (*SECRET_NAMES, "credentials", ".env", ".env.local", ".env.production", "anthropic_key.sh", "sa-key.json")
 GLOB_CHARS = set("*?[")
 FRAGMENT_SPLIT = re.compile(r"[=@:;,]")
 CODE_SPLIT = re.compile(r"[^\w.~/*?\[\]$-]+")
@@ -69,6 +70,7 @@ def is_secret(path: str) -> bool:
         name == ".env"
         or name.startswith((".env.", "anthropic_key"))
         or name in SECRET_NAMES
+        or (name == "credentials" and Path(path).parent.name in CREDENTIAL_DIRS)
         or name.endswith(SECRET_SUFFIXES)
         or (fnmatch.fnmatchcase(lower, "*key*.json") and not lower.startswith(NOT_KEY_FILES))
     )

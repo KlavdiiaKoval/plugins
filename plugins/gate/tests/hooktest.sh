@@ -1003,6 +1003,8 @@ check "cp .env.example .env allowed" allow "$(gb 'cp .env.example .env')"
 check "echo mentioning .env allowed" allow "$(gb 'echo "see .env"')"
 check "Read .env denied" deny "$(gr "$RB/.env")"
 check "Read key file denied" deny "$(gr "$RB/certs/server.key")"
+check "Read aws credentials denied" deny "$(gr "$RB/.aws/credentials")"
+check "go package named credentials allowed" allow "$(gb 'go test ./internal/credentials')"
 check "Read normal file allowed" allow "$(gr "$RB/p.go")"
 # Run bash_checks.py on a Grep payload; print its decision.
 gg() { python3 -c "import json,sys;print(json.dumps({'tool_name':'Grep','cwd':sys.argv[2],'tool_input':json.loads(sys.argv[1])}))" "$1" "$RB" | "$K/bash_checks.py" | jq -rs '.[0].hookSpecificOutput.permissionDecision // "allow"'; }
