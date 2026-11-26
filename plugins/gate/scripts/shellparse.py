@@ -81,7 +81,7 @@ class Command:
 
 def is_comment_start(out: list[str]) -> bool:
     """Report whether a `#` here starts a comment: it opens a word."""
-    return not out or out[-1] in WORD_BREAK
+    return not out or out[-1][-1:] in WORD_BREAK
 
 
 def heredoc_body(text: str, start: int, word: str, dash: bool) -> tuple[str, int] | None:
