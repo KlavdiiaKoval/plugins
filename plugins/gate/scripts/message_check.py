@@ -16,7 +16,7 @@ from pathlib import Path
 
 import prose
 import rejections
-from ghpr import gh_subcommand, git, is_trusted_owner, is_trusted_repo, merge_base
+from ghpr import GIT_FLAGS_WITH_ARG, gh_subcommand, git, is_trusted_owner, is_trusted_repo, merge_base
 from offswitch import ON, is_off
 from shellparse import commands
 
@@ -72,7 +72,7 @@ def commit_message(words: list[str], cwd: str) -> str | None:
     """Return the message a `git commit` will use, or None when it opens an editor or reuses one."""
     i = 1
     while i < len(words) and words[i].startswith("-") and words[i] != "commit":
-        i += 2 if words[i] in ("-C", "-c") else 1
+        i += 2 if words[i] in GIT_FLAGS_WITH_ARG else 1
     if i >= len(words) or words[i] != "commit":
         return None
     args = words[i + 1 :]

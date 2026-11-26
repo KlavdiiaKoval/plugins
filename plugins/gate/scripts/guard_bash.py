@@ -20,6 +20,7 @@ from pathlib import Path
 
 import rejections
 from offswitch import is_off
+from ghpr import GIT_FLAGS_WITH_ARG
 from shellparse import Command, commands, loose_commands
 
 MAIN = {"main", "master"}
@@ -183,7 +184,7 @@ def git_cwd(words: list[str], cwd: str) -> tuple[str, int]:
         if words[i] == "-C" and i + 1 < len(words):
             cwd = str(Path(cwd) / os.path.expanduser(words[i + 1]))
             i += 2
-        elif words[i] == "-c":
+        elif words[i] in GIT_FLAGS_WITH_ARG:
             i += 2
         else:
             i += 1

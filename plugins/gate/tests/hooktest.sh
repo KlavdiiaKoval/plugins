@@ -976,6 +976,7 @@ check "cd into main checkout then push denied" deny "$(gb "cd $RBM && git push" 
 check "git -C main checkout push denied" deny "$(gb "git -C $RBM push" "$W")"
 check "push inside bash -c denied" deny "$(gb "bash -c 'git push origin main'")"
 check "rtk wrapped force push denied" deny "$(gb 'rtk git push -f')"
+check "force push after --git-dir denied" deny "$(gb 'git --git-dir .git push --force origin feat')"
 check "push-option value not a refspec" allow "$(gb 'git push -o ci.skip origin feat')"
 check "cat .env denied" deny "$(gb 'cat .env')"
 check "grep in .env.production denied" deny "$(gb 'grep KEY config/.env.production | head')"
@@ -1118,6 +1119,7 @@ check "bad commit after a comment line blocks" 2 "$(mc $'echo hi # note\ngit com
 check "bad commit after a quoted comment on line 2 blocks" 2 "$(mc $'cd .\n# don\'t forget\ngit commit -m "wip"')"
 check "bad commit after a heredoc with a quote blocks" 2 "$(mc $'cat > f <<\'EOF\'\nit\'s\nEOF\ngit commit -m "wip"')"
 check "bad commit in bash -c blocks" 2 "$(mc "bash -c 'git commit -m wip'")"
+check "bad commit after --git-dir blocks" 2 "$(mc 'git --git-dir .git commit -m "wip"')"
 check "bad commit under timeout blocks" 2 "$(mc 'timeout 10 git commit -m wip')"
 check "unquoted heredoc pr body passes" 0 "$(mc "gh pr create --title '$T' --body \$(cat <<'EOF'
 Adds lo for chunking. It's \"safe\".
