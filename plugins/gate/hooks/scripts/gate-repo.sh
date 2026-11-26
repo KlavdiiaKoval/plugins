@@ -59,7 +59,10 @@ limited() {
   local pid watcher rc
   "$@" &
   pid=$!
-  (sleep "$(left)" && kill_tree "$pid") >/dev/null 2>&1 &
+  local wait_for
+  wait_for=$(left)
+  [ "$wait_for" -ge 1 ] || wait_for=1
+  (sleep "$wait_for" && kill_tree "$pid") >/dev/null 2>&1 &
   watcher=$!
   wait "$pid"
   rc=$?
@@ -299,10 +302,16 @@ vuln_check() {
   changed_files "$root" "$base" | grep -E '(^|/)go\.(mod|sum)$' | while IFS= read -r f; do dirname "$f"; done | sort -u |
     while IFS= read -r m; do
       [ -f "$root/$m/go.mod" ] || continue
-      in_budget "govulncheck" "$root/$m" || continue
+      # This runs in a subshell, so report a skip or a timeout on stdout: add_fail would be lost.
+      if [ "$(left)" -lt 15 ]; then
+        printf '%s\n%s\n' "$root/$m" "The repo gate ran out of time before govulncheck. Run it by hand before finishing."
+        continue
+      fi
       out=$(cd "$root/$m" && limited govulncheck ./... 2>&1)
       rc=$?
-      [ "$rc" -eq 3 ] && printf '%s\n%s\n' "$root/$m" "$out" | head -60
+      if [ "$rc" -eq 3 ] || [[ "$out" == *"Stopped: the repo gate ran out of time"* ]]; then
+        printf '%s\n%s\n' "$root/$m" "$out" | head -60
+      fi
     done
 }
 

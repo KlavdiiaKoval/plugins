@@ -13,6 +13,7 @@ export CLAUDE_PLUGIN_DATA="$W/data"
 export CLAUDE_PLUGIN_OPTION_TRUSTED_ORGS="acme gitlab.example.com/acme-labs"
 export CLAUDE_PLUGIN_OPTION_TICKET_KEY=true
 
+# Compare an exit code or output with the expected value and count the result.
 check() {
   local name="$1" want="$2" got="$3"
   if [ "$want" = "$got" ]; then
@@ -22,6 +23,7 @@ check() {
   fi
 }
 
+# Print JSON from stdin on one line.
 json() { python3 -c "import json,sys;print(json.dumps(json.loads(sys.stdin.read())))"; }
 
 # Repos get an acme remote, so team rules and repo binaries apply.
@@ -566,6 +568,9 @@ mkdir -p "$W/bin"; printf '#!/bin/sh\ntouch %s/review_ran\n' "$W" >"$W/bin/claud
 python3 -c "import json,sys;print(json.dumps({'cwd':sys.argv[1],'tool_input':{'command':'gh'+' pr '+'create --fill'}}))" "$R13" |
   PATH="$W/bin:$PATH" "$H/pr_gate.py" >/dev/null 2>&1
 check "pr_gate blocks on tests" 2 $?
+python3 -c "import json,sys;print(json.dumps({'cwd':sys.argv[1],'tool_input':{'command':'gh'+' pr '+'create --fill'}}))" "$R13" |
+  CLAUDE_PLUGIN_OPTION_TRUSTED_ORGS= PATH="$W/bin:$PATH" "$H/pr_gate.py" >/dev/null 2>&1
+check "pr_gate skips untrusted repos" 0 $?
 [ -f "$W/review_ran" ]
 check "review skipped when tests block" 1 $?
 python3 -I -c "
@@ -1138,6 +1143,10 @@ check "commit body dash still passes" 0 "$(mc "git commit -m 'fix: retry syncs' 
 RSQ=$(mkrepo sq); git -C "$RSQ" checkout -q -b feat
 echo "package p // a" >"$RSQ/p.go"; git -C "$RSQ" commit -qam "fix: retry failed syncs"
 check "pr with one logical commit passes" 0 "$(mc "gh pr create --title '$T' --body '$BODY'" "$RSQ")"
+git -C "$RSQ" checkout -q main; echo "package p // m" >"$RSQ/m.go"; git -C "$RSQ" add m.go; git -C "$RSQ" commit -qm "chore: add m"
+git -C "$RSQ" checkout -q feat; git -C "$RSQ" merge -q --no-edit main
+check "pr with main merged in passes" 0 "$(mc "gh pr create --title '$T' --body '$BODY'" "$RSQ")"
+git -C "$RSQ" reset -q --hard HEAD~1
 echo "package p // b" >"$RSQ/p.go"; git -C "$RSQ" commit -qam "fixup! fix: retry failed syncs"
 check "pr with a fixup commit blocks" 2 "$(mc "gh pr create --title '$T' --body '$BODY'" "$RSQ")"
 git -C "$RSQ" reset -q --soft HEAD~1; git -C "$RSQ" commit -qm "fix: retry failed syncs"
@@ -1151,6 +1160,7 @@ check "pr without body passes" 0 "$(mc "gh pr create --fill")"
 check "other command passes" 0 "$(mc 'git status')"
 check "bad commit on a second line blocks" 2 "$(mc $'git add x\ngit commit -m "wip"')"
 check "bad commit after a comment line blocks" 2 "$(mc $'echo hi # note\ngit commit -m "wip"')"
+check "bad commit after a quoted comment on line 2 blocks" 2 "$(mc $'cd .\n# don\'t forget\ngit commit -m "wip"')"
 check "bad commit after a heredoc with a quote blocks" 2 "$(mc $'cat > f <<\'EOF\'\nit\'s\nEOF\ngit commit -m "wip"')"
 check "bad commit in bash -c blocks" 2 "$(mc "bash -c 'git commit -m wip'")"
 check "bad commit under timeout blocks" 2 "$(mc 'timeout 10 git commit -m wip')"
@@ -1174,6 +1184,10 @@ check "no trusted orgs: commit rules off" 0 "$(CLAUDE_PLUGIN_OPTION_TRUSTED_ORGS
 check "owner prefix is not trusted" 0 "$(git -C "$RNX" remote set-url origin git@github.com:acme-evil/notours.git; mc 'git commit -m "wip"' "$RNX")"
 check "host/owner entry trusts that host" 2 "$(git -C "$RNX" remote set-url origin https://gitlab.example.com/acme-labs/x.git; mc 'git commit -m "wip"' "$RNX")"
 check "owner on another host is not trusted" 0 "$(git -C "$RNX" remote set-url origin https://gitlab.example.com/acme/x.git; mc 'git commit -m "wip"' "$RNX")"
+check "look-alike host is not trusted" 0 "$(git -C "$RNX" remote set-url origin https://notgithub.com/acme/x.git; mc 'git commit -m "wip"' "$RNX")"
+(. "$P/scripts/lib.sh"; is_trusted_repo "$RNX"); check "lib.sh: look-alike host is not trusted" 1 $?
+git -C "$RNX" remote set-url origin git@github.com:acme/x.git
+(. "$P/scripts/lib.sh"; is_trusted_repo "$RNX"); check "lib.sh: ssh remote is trusted" 0 $?
 git -C "$RNX" remote set-url origin https://github.com/someone/notours.git
 check "ticket key off: title without a key passes" 0 "$(CLAUDE_PLUGIN_OPTION_TICKET_KEY=false mc "gh pr create --title 'fix(sync): retry failed syncs' --body '$LOBODY'")"
 check "ticket key on: title without a key blocks" 2 "$(mc "gh pr create --title 'fix(sync): retry failed syncs' --body '$LOBODY'")"
