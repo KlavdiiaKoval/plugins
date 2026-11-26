@@ -39,6 +39,8 @@ DEP_LINES = {
 # package.json objects whose keys are dependencies, and a line that opens an object.
 NPM_DEP_SECTIONS = {"dependencies", "devDependencies", "peerDependencies", "optionalDependencies"}
 JSON_OBJECT = re.compile(r'^\s*"([^"]+)"\s*:\s*\{')
+# An npm version spec, for package.json lines whose object the diff doesn't show.
+NPM_VERSION = re.compile(r'"\s*:\s*"(?:[\^~]|[<>]=?|=)?\s*v?\d|"\s*:\s*"(?:npm|workspace|file|link|github|git\+\w+):|"\s*:\s*"(?:\*|latest)"')
 # pyproject entries: `"requests>=2",` or `"requests",` in a list, `requests = "^2"` in a poetry table.
 PY_LIST_ENTRY = re.compile(r'^\s*"([A-Za-z][\w.\-]*)(?:\[[\w,\s-]*\])?\s*(?:[><=~!\^;][^"]*)?"\s*,?\s*$')
 PY_TABLE_ENTRY = re.compile(r'^\s*([A-Za-z][\w.\-]*)\s*=\s*["{]')
@@ -227,7 +229,9 @@ def new_deps(diff: str) -> set[str]:
             section, name = opener.group(1), None
         elif (pattern := DEP_LINES.get(current)) and not text.rstrip().endswith("// indirect"):
             name = m.group(1) if (m := pattern.match(text)) else None
-            if current == "package.json" and section is not None and section not in NPM_DEP_SECTIONS:
+            if current == "package.json" and (
+                section not in NPM_DEP_SECTIONS if section is not None else not NPM_VERSION.search(text)
+            ):
                 name = None
         else:
             name = None
