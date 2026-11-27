@@ -38,13 +38,13 @@ Load each reference file at the step that names it.
 
 ## PR description
 
-Google's CL description style, plain prose with no section headings:
+A bottom line, then labeled blocks (the `git-conventions` shape, if the gate plugin is installed):
 
-- First: the problem, and why this PR is only types and stubs. Say "Start with the doc, then read the doc comments, which are the contracts."
-- Then: the later PRs (one line each: what it fills), that nothing is registered, routed or wired, any one-line real bodies, and every module pin with its commit, if any.
-- Then a `Risk:` line. For PR 0 it is usually that nothing changes for users, since nothing is wired.
-- Then a `Tested:` line with the commands that pass (Go: build, vet, `go test -short`, golangci-lint with `GOWORK=off`; TS: `tsc --noEmit`, eslint, tests; Python: type check, ruff, tests). No new lint findings.
-
+- Bottom line: one sentence, like "Adds the types and stubs for <feature>, so we can agree on the contracts before any logic."
+- `Why:` the problem, and why this PR is only types and stubs. Say "Start with the doc, then read the doc comments, which are the contracts."
+- `What changes:` one bullet per later PR (what it fills), then that nothing is registered, routed or wired, any one-line real bodies, and every module pin with its commit, if any.
+- `Risk:` for PR 0 it is usually that nothing changes for users, since nothing is wired.
+- `Tested:` the commands that pass (Go: build, vet, `go test -short`, golangci-lint with `GOWORK=off`; TS: `tsc --noEmit`, eslint, tests; Python: type check, ruff, tests). No new lint findings.
 
 ## After PR 0 merges
 

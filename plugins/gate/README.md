@@ -13,7 +13,7 @@ Claude writes code fast, but it skips the boring parts. It mutes a lint error in
 | Before a command | Refused: force pushes (use `--force-with-lease`), pushes to `main` or `master`, and commands that name a secrets file such as `.env` or `*.pem`. Scripts and recursive reads aren't inspected. |
 | After an edit | The file is formatted and linted: Go with golangci-lint, Python with ruff, and TypeScript with the repo's eslint in trusted repos. |
 | Claude finishes its answer | Each changed repo must build, pass lint and, in trusted repos, pass its tests. If not, Claude gets one more try to fix it. |
-| `git commit`, `gh pr create` | Commits use Conventional Commits, one logical change each. PR bodies need a `Risk:` and a `Tested:` line. |
+| `git commit`, `gh pr create` | Commits use Conventional Commits, one logical change each. PR bodies open with a one-sentence bottom line, then `Why:`, `What changes:`, `Risk:` and `Tested:`. |
 | `gh pr create` | Changed code needs a changed test. A second Claude reviews the diff for serious problems. |
 
 Only new problems count: lint issues and mute comments older than the branch don't block Claude.
@@ -55,7 +55,8 @@ A rule that keeps failing is worth teaching: put it in a conventions skill or yo
 
 ## Skills and agents
 
-- `git-conventions`: how to write commit messages, PR titles and PR descriptions.
+- `git-conventions`: how to write commit messages, PR titles and PR descriptions, with a diagram when a flow changes.
+- `linear-tickets`: when to file a Linear ticket, a short bottom-line top for people and Agent notes for agents. A Linear save that breaks the shape is refused; teams without Linear never hit the check.
 - `go-conventions`, `ts-conventions`, `python-conventions`: opinionated defaults for writing code. The AI review reads them too.
 - `go-reviewer` and `security-reviewer` agents.
 

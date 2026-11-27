@@ -40,22 +40,24 @@ The same shape as a commit subject, plus the ticket key when your team uses one:
 
 ## PR description
 
-Four short paragraphs, in this order, plain prose, no headings:
+Bottom line up front (BLUF), then four labeled blocks. A reviewer gets the point from line one and scans the rest by label.
 
-1. **Why.** The problem, in one or two sentences a newcomer understands. What goes wrong today, for whom.
-1. **What changes.** The behavior before and after. Name every behavior change, even a small one. Then only what the diff doesn't show: a design choice, a trade-off, what you left out on purpose. Name each new dependency and why the standard library is not enough.
-1. **`Risk:`** What could break, who would notice, and how to roll back. Be concrete: "a sync that keeps failing now takes 5 tries before it alerts" beats "low risk". If nothing changes for users, say that.
+1. **Bottom line.** One plain sentence: what this PR does and what it fixes. No label.
+1. **`Why:`** The problem, for whom, in one or two sentences a newcomer understands.
+1. **`What changes:`** One bullet per behavior change, even a small one. Then only what the diff doesn't show: a design choice, a trade-off, what you left out on purpose. Name each new dependency and why the standard library is not enough.
+1. **`Risk:`** What could break, who would notice, and how to roll back. Use bullets when there is more than one point. Be concrete: "a sync that keeps failing now takes 5 tries before it alerts" beats "low risk". If nothing changes for users, say that.
 1. **`Tested:`** the commands you ran.
 
-Link the ticket and related PRs. No file lists, no restating the diff, no labels like "low risk" or "blast radius" without the facts behind them. Under 15 lines before `Tested:` is a good size.
+Add an `After deploy:` line only when someone must act after the merge. Link the ticket and related PRs. No file lists, no restating the diff, no history beyond a PR link, no labels like "low risk" or "blast radius" without the facts behind them.
+
+Add a diagram when a picture says it faster than bullets: a new or changed flow between services, a state machine, a data path, or a dependency that changes direction. Put it in a ```` ```mermaid ```` block right after `What changes:`, use the names from the code, keep it to about 15 nodes, and add one line under it that says what to look at. Skip it for small or single-file changes. The checks skip code blocks, so a diagram never counts toward the line cap.
 
 Make it easy to read:
 
+- One fact per bullet, at most two sentences.
 - Short sentences, one idea each, at most 30 words.
 - Plain words. Say "retries" not "implements a resilience mechanism". Put code names in backticks.
-- Start each paragraph with its point.
-- Two or more changes: list them as short bullets under the "what changes" sentence, one change per bullet.
-- No bold, tables or emoji. At most five sentences per paragraph; each list item counts on its own.
+- No headings, bold, tables or emoji. The labels are the structure.
 - No em or en dashes as punctuation (a dash between numbers is fine) and no stock phrases such as "that said" or "it's worth noting".
 - At most 45 non-blank lines.
 - Before you post, read it once as someone new to the code.
@@ -63,11 +65,18 @@ Make it easy to read:
 Example:
 
 ```
-A 503 from the warehouse fails the whole sync today, so customers see stale data until the next day's run.
+Failed syncs now retry with backoff, so a warehouse 503 no longer leaves customers with stale data.
 
-Now a failed sync retries with backoff: 1, 2, 4, 8 and 16 seconds. After the fifth try it goes to the dead-letter queue, as before. Syncs that already succeed don't change.
+Why: a 503 from the warehouse fails the whole sync, and data stays stale until the next day's run.
 
-Risk: a sync that keeps failing alerts about 30 seconds later than now. Roll back by reverting this PR, there is no migration.
+What changes:
+- A failed sync retries after 1, 2, 4, 8 and 16 seconds.
+- After the fifth try it goes to the dead-letter queue, as before.
+- Syncs that already succeed don't change.
+
+Risk:
+- A sync that keeps failing alerts about 30 seconds later than now.
+- Roll back by reverting this PR. There is no migration.
 
 Tested: go test ./sync/...
 ```
@@ -80,7 +89,7 @@ Tested: go test ./sync/...
 - a body with no blank line after the subject, and a `!` commit with no body
 - at `gh pr create`: branch commits that are fixups, repeats, review or lint fixes, or untyped
 - a PR title without a type, without a ticket key (when the `ticket_key` option is on), over 72 characters, or with an em or en dash
-- a PR body with a heading, without a `Risk:` or `Tested:` line, or that doesn't name a new dependency
-- a PR body with an em or en dash as punctuation, a stock phrase, a sentence over 30 words, a paragraph or list item over five sentences, or over 45 non-blank lines. Code blocks and code spans are skipped.
+- a PR body that doesn't open with a one-sentence bottom line, has a heading, misses a `Why:`, `What changes:`, `Risk:` or `Tested:` line, or doesn't name a new dependency
+- a PR body with an em or en dash as punctuation, a stock phrase, a sentence over 30 words, a paragraph over five sentences, a list item over two, or over 45 non-blank lines. Code blocks and code spans are skipped.
 
 Editor commits and `gh pr create --fill` are not checked. Whether the text is clear is still up to you: the hook only checks shape and length.

@@ -29,7 +29,17 @@
             "type": "command",
             "command": "\"${CLAUDE_PLUGIN_ROOT}\"/hooks/scripts/bash_checks.py",
             "timeout": 170,
-            "statusMessage": "Checking the command…"
+            "statusMessage": "Checking the command\u2026"
+          }
+        ]
+      },
+      {
+        "matcher": "mcp__.*[Ll]inear.*__(save_issue|create_issue|update_issue)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}\"/hooks/scripts/linear_check.py",
+            "timeout": 15
           }
         ]
       }
@@ -42,7 +52,7 @@
             "type": "command",
             "command": "\"${CLAUDE_PLUGIN_ROOT}\"/hooks/scripts/gate-file.sh",
             "timeout": 120,
-            "statusMessage": "Checking the edited file…"
+            "statusMessage": "Checking the edited file\u2026"
           }
         ]
       },
@@ -76,7 +86,7 @@
             "type": "command",
             "command": "\"${CLAUDE_PLUGIN_ROOT}\"/hooks/scripts/gate-repo.sh",
             "timeout": 420,
-            "statusMessage": "Running the repo gate…"
+            "statusMessage": "Running the repo gate\u2026"
           }
         ]
       }
